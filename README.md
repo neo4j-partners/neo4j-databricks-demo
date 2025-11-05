@@ -86,12 +86,12 @@ First, create the Unity Catalog namespace for the project:
 -- Create the catalog
 CREATE CATALOG IF NOT EXISTS retail_investment;
 
--- Create the default schema
-CREATE SCHEMA IF NOT EXISTS retail_investment.default;
+-- Create the retail_investment schema
+CREATE SCHEMA IF NOT EXISTS retail_investment.retail_investment;
 
 -- Grant appropriate permissions
 GRANT USE CATALOG ON CATALOG retail_investment TO `<your-users-or-groups>`;
-GRANT USE SCHEMA ON SCHEMA retail_investment.default TO `<your-users-or-groups>`;
+GRANT USE SCHEMA ON SCHEMA retail_investment.retail_investment TO `<your-users-or-groups>`;
 ```
 
 ### Step 2: Create a Databricks Cluster
@@ -184,7 +184,7 @@ Expected output:
 ```
 Total Tables Created: 7
 Total Records Extracted: <your-count>
-Catalog Location: retail_investment.default
+Catalog Location: retail_investment.retail_investment
 ```
 
 ### Step 4: Create Unity Catalog Volume and Upload Profile Documents
@@ -194,7 +194,7 @@ Create a volume to store customer profiles and documents for the Knowledge Agent
 1. **Create a Unity Catalog Volume**:
    - Navigate to **Catalog** in your Databricks workspace
    - Select the `retail_investment` catalog
-   - Click on the `default` schema
+   - Click on the `retail_investment` schema
    - Click **Create** → **Volume**
    - Configure the volume:
      - **Name**: `retail_investment_volume`
@@ -227,13 +227,13 @@ Create a volume to store customer profiles and documents for the Knowledge Agent
 
 3. **Verify the upload**:
    - You should see all 14 `.txt` files in the volume
-   - The volume path will be: `/Volumes/retail_investment/default/retail_investment_volume/`
+   - The volume path will be: `/Volumes/retail_investment/retail_investment/retail_investment_volume/`
    - This path will be used when creating the Knowledge Agent
 
 4. **Set permissions** (if needed):
    - Grant READ access to users who will use the Knowledge Agent
    ```sql
-   GRANT READ VOLUME ON VOLUME retail_investment.default.retail_investment_volume TO `<your-users-or-groups>`;
+   GRANT READ VOLUME ON VOLUME retail_investment.retail_investment.retail_investment_volume TO `<your-users-or-groups>`;
    ```
 
 ### Step 5: Create a Databricks Genie
@@ -247,7 +247,7 @@ Once the lakehouse is created, set up a Genie to query the structured data:
 2. **Configure the Genie**:
    - **Name**: "Retail Investment Data Assistant"
    - **Description**: "Query customer accounts, portfolios, and investment positions"
-   - **Data Source**: Select `retail_investment.default`
+   - **Data Source**: Select `retail_investment.retail_investment`
    - **Tables**: Include all 14 tables (7 node + 7 relationship tables)
 
 3. **Add business context** (optional but recommended):
@@ -273,8 +273,8 @@ Create a Knowledge Agent to analyze customer profiles and documents from the Uni
 
 2. **Connect to the Unity Catalog Volume**:
    - In the **Data Source** section, select **Unity Catalog Volume**
-   - Browse to: `retail_investment.default.retail_investment_volume`
-   - Or enter the path: `/Volumes/retail_investment/default/retail_investment_volume/`
+   - Browse to: `retail_investment.retail_investment.retail_investment_volume`
+   - Or enter the path: `/Volumes/retail_investment/retail_investment/retail_investment_volume/`
    - The agent will automatically index all 14 `.txt` files in the volume:
      - Customer profiles (3 files)
      - Bank and branch profiles (2 files)
@@ -365,22 +365,22 @@ After completing the setup, the following resources will exist in your Databrick
 **Unity Catalog**:
 ```
 retail_investment/                                    # Catalog
-├── default/                                         # Schema
+├── retail_investment/                               # Schema
 │   ├── retail_investment_volume/                   # Volume (14 .txt files)
-│   ├── neo4j_customer                              # Node table
-│   ├── neo4j_bank                                  # Node table
-│   ├── neo4j_account                               # Node table
-│   ├── neo4j_company                               # Node table
-│   ├── neo4j_stock                                 # Node table
-│   ├── neo4j_position                              # Node table
-│   ├── neo4j_transaction                           # Node table
-│   ├── neo4j_has_account                           # Relationship table
-│   ├── neo4j_at_bank                               # Relationship table
-│   ├── neo4j_of_company                            # Relationship table
-│   ├── neo4j_performs                              # Relationship table
-│   ├── neo4j_benefits_to                           # Relationship table
-│   ├── neo4j_has_position                          # Relationship table
-│   └── neo4j_of_security                           # Relationship table
+│   ├── customer                                    # Node table
+│   ├── bank                                        # Node table
+│   ├── account                                     # Node table
+│   ├── company                                     # Node table
+│   ├── stock                                       # Node table
+│   ├── position                                    # Node table
+│   ├── transaction                                 # Node table
+│   ├── has_account                                 # Relationship table
+│   ├── at_bank                                     # Relationship table
+│   ├── of_company                                  # Relationship table
+│   ├── performs                                    # Relationship table
+│   ├── benefits_to                                 # Relationship table
+│   ├── has_position                                # Relationship table
+│   └── of_security                                 # Relationship table
 ```
 
 ## Data Flow
@@ -397,27 +397,27 @@ retail_investment/                                    # Catalog
        ▼                                    ▼
 ┌────────────────────────────────────────────────────────┐
 │  Databricks Unity Catalog                              │
-│  retail_investment.default                             │
+│  retail_investment.retail_investment                   │
 │                                                        │
 │  Volume:                     Tables (14):              │
 │  ┌──────────────────────┐   ┌────────────────────┐    │
 │  │ retail_investment_   │   │ Node Tables (7):   │    │
-│  │ volume/              │   │ - neo4j_customer   │    │
-│  │ - 14 .txt files      │   │ - neo4j_bank       │    │
-│  │   (profiles, docs)   │   │ - neo4j_account    │    │
-│  └──────────────────────┘   │ - neo4j_company    │    │
-│                              │ - neo4j_stock      │    │
-│                              │ - neo4j_position   │    │
-│                              │ - neo4j_transaction│    │
+│  │ volume/              │   │ - customer         │    │
+│  │ - 14 .txt files      │   │ - bank             │    │
+│  │   (profiles, docs)   │   │ - account          │    │
+│  └──────────────────────┘   │ - company          │    │
+│                              │ - stock            │    │
+│                              │ - position         │    │
+│                              │ - transaction      │    │
 │                              │                    │    │
 │                              │ Relationship (7):  │    │
-│                              │ - neo4j_has_account│    │
-│                              │ - neo4j_at_bank    │    │
-│                              │ - neo4j_of_company │    │
-│                              │ - neo4j_performs   │    │
-│                              │ - neo4j_benefits_to│    │
-│                              │ - neo4j_has_position│   │
-│                              │ - neo4j_of_security│    │
+│                              │ - has_account      │    │
+│                              │ - at_bank          │    │
+│                              │ - of_company       │    │
+│                              │ - performs         │    │
+│                              │ - benefits_to      │    │
+│                              │ - has_position     │    │
+│                              │ - of_security      │    │
 │                              └────────────────────┘    │
 └────────┬───────────────────────────┬───────────────────┘
          │                           │
@@ -558,14 +558,14 @@ All schemas are defined in `neo4j_schemas.py` with:
 
 **Problem**: Files not appearing in Knowledge Agent
 - **Solution**: Verify files were uploaded to the correct volume path
-- Check that the volume path is: `/Volumes/retail_investment/default/retail_investment_volume/`
+- Check that the volume path is: `/Volumes/retail_investment/retail_investment/retail_investment_volume/`
 - Ensure all 14 `.txt` files are present in the volume
 - Try re-indexing the Knowledge Agent if files were added after agent creation
 
 **Problem**: Knowledge Agent cannot access volume
 - **Solution**: Grant READ VOLUME permissions:
   ```sql
-  GRANT READ VOLUME ON VOLUME retail_investment.default.retail_investment_volume TO `<user-or-group>`;
+  GRANT READ VOLUME ON VOLUME retail_investment.retail_investment.retail_investment_volume TO `<user-or-group>`;
   ```
 - Verify the agent configuration points to the correct volume path
 - Check that the volume type is "Managed" (not External)
@@ -641,7 +641,7 @@ databricks secrets put-secret neo4j password
 
 **Volume Path**:
 ```
-/Volumes/retail_investment/default/retail_investment_volume/
+/Volumes/retail_investment/retail_investment/retail_investment_volume/
 ```
 
 **Catalog and Schema**:
@@ -650,10 +650,10 @@ databricks secrets put-secret neo4j password
 retail_investment
 
 -- Schema
-retail_investment.default
+retail_investment.retail_investment
 
 -- Volume
-retail_investment.default.retail_investment_volume
+retail_investment.retail_investment.retail_investment_volume
 ```
 
 **Files in Volume**: 14 `.txt` files from `data/profiles/`

@@ -31,31 +31,31 @@ __all__ = [
 
 # Unity Catalog Configuration
 CATALOG_NAME = "retail_investment"
-SCHEMA_NAME = "default"
+SCHEMA_NAME = "retail_investment"
 
 
 # Dictionary mapping node labels to Unity Catalog table names
 # Format: catalog.schema.table (Unity Catalog three-level namespace)
 NODE_TABLE_NAMES: Dict[str, str] = {
-    "Customer": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_customer",
-    "Bank": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_bank",
-    "Account": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_account",
-    "Company": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_company",
-    "Stock": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_stock",
-    "Transaction": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_transaction",
-    "Position": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_position",
+    "Customer": f"{CATALOG_NAME}.{SCHEMA_NAME}.customer",
+    "Bank": f"{CATALOG_NAME}.{SCHEMA_NAME}.bank",
+    "Account": f"{CATALOG_NAME}.{SCHEMA_NAME}.account",
+    "Company": f"{CATALOG_NAME}.{SCHEMA_NAME}.company",
+    "Stock": f"{CATALOG_NAME}.{SCHEMA_NAME}.stock",
+    "Transaction": f"{CATALOG_NAME}.{SCHEMA_NAME}.transaction",
+    "Position": f"{CATALOG_NAME}.{SCHEMA_NAME}.position",
 }
 
 # Dictionary mapping relationship types to Unity Catalog table names
 # Format: catalog.schema.table (Unity Catalog three-level namespace)
 RELATIONSHIP_TABLE_NAMES: Dict[str, str] = {
-    "HAS_ACCOUNT": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_has_account",
-    "AT_BANK": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_at_bank",
-    "OF_COMPANY": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_of_company",
-    "PERFORMS": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_performs",
-    "BENEFITS_TO": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_benefits_to",
-    "HAS_POSITION": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_has_position",
-    "OF_SECURITY": f"{CATALOG_NAME}.{SCHEMA_NAME}.neo4j_of_security",
+    "HAS_ACCOUNT": f"{CATALOG_NAME}.{SCHEMA_NAME}.has_account",
+    "AT_BANK": f"{CATALOG_NAME}.{SCHEMA_NAME}.at_bank",
+    "OF_COMPANY": f"{CATALOG_NAME}.{SCHEMA_NAME}.of_company",
+    "PERFORMS": f"{CATALOG_NAME}.{SCHEMA_NAME}.performs",
+    "BENEFITS_TO": f"{CATALOG_NAME}.{SCHEMA_NAME}.benefits_to",
+    "HAS_POSITION": f"{CATALOG_NAME}.{SCHEMA_NAME}.has_position",
+    "OF_SECURITY": f"{CATALOG_NAME}.{SCHEMA_NAME}.of_security",
 }
 
 
@@ -67,7 +67,7 @@ def get_node_table_name(node_label: str) -> str:
         node_label: Neo4j node label (e.g., "Customer", "Bank").
 
     Returns:
-        Unity Catalog table name (e.g., "retail_investment.default.neo4j_customer").
+        Unity Catalog table name (e.g., "retail_investment.retail_investment.customer").
 
     Raises:
         ValueError: If node_label is not defined.
@@ -75,7 +75,7 @@ def get_node_table_name(node_label: str) -> str:
     Example:
         >>> table = get_node_table_name("Customer")
         >>> print(table)
-        retail_investment.default.neo4j_customer
+        retail_investment.retail_investment.customer
     """
     if node_label not in NODE_TABLE_NAMES:
         available = ", ".join(sorted(NODE_TABLE_NAMES.keys()))
@@ -95,7 +95,7 @@ def get_relationship_table_name(relationship_type: str) -> str:
         relationship_type: Neo4j relationship type (e.g., "HAS_ACCOUNT", "AT_BANK").
 
     Returns:
-        Unity Catalog table name (e.g., "retail_investment.default.neo4j_has_account").
+        Unity Catalog table name (e.g., "retail_investment.retail_investment.has_account").
 
     Raises:
         ValueError: If relationship_type is not defined.
@@ -103,7 +103,7 @@ def get_relationship_table_name(relationship_type: str) -> str:
     Example:
         >>> table = get_relationship_table_name("HAS_ACCOUNT")
         >>> print(table)
-        retail_investment.default.neo4j_has_account
+        retail_investment.retail_investment.has_account
     """
     if relationship_type not in RELATIONSHIP_TABLE_NAMES:
         available = ", ".join(sorted(RELATIONSHIP_TABLE_NAMES.keys()))
