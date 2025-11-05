@@ -70,13 +70,42 @@ Before you begin, ensure you have:
 
 - **Databricks Workspace** with Unity Catalog enabled
 - **Databricks Compute** permissions to create clusters
-- **Neo4j Database** with the retail investment graph data loaded
+- **Neo4j Database** (AuraDB or Neo4j Desktop instance)
 - **Databricks Genie** access (for creating the query agent)
 - **Databricks AI/BI** workspace (for knowledge agents)
 - Proper **credentials** for Neo4j (username and password)
 - **Databricks CLI** installed (optional, for managing secrets)
 
 ## Setup Instructions
+
+### Step 0: Setup Neo4j Database with Sample Data
+
+Before extracting data to Databricks, you need to set up your Neo4j database with the retail investment graph data:
+
+1. **Follow the complete setup instructions in `DATA_IMPORT.md`**
+   - This guide provides detailed instructions for importing the graph schema and sample data
+   - You can use either Neo4j AuraDB (cloud) or Neo4j Desktop (local)
+
+2. **Quick summary of the import process**:
+   - Create a Neo4j AuraDB instance or start Neo4j Desktop
+   - Open the Neo4j Data Importer
+   - Load the schema definition: `neo4j_importer_model_financial_demo.json`
+   - Upload all CSV files from `data/csv/` directory
+   - Run the import to create the graph database
+   - Verify the import using the provided Cypher queries
+
+3. **What gets imported**:
+   - **7 Node Types**: Customer, Bank, Account, Company, Stock, Position, Transaction
+   - **7 Relationship Types**: HAS_ACCOUNT, AT_BANK, OF_COMPANY, PERFORMS, BENEFITS_TO, HAS_POSITION, OF_SECURITY
+   - **Sample Data**: 102 customers, 102 banks, 123 accounts, 102 companies, 102 stocks, 110 positions, 123 transactions
+
+4. **Save your Neo4j connection details** for the next steps:
+   - Neo4j URL (e.g., `neo4j+s://xxxxx.databases.neo4j.io`)
+   - Username (usually `neo4j`)
+   - Password
+   - Database name (usually `neo4j`)
+
+Once your Neo4j database is set up and verified, proceed to Step 1 to create the Databricks catalog.
 
 ### Step 1: Create Databricks Catalog and Schema
 
@@ -283,31 +312,38 @@ Create a Knowledge Agent to analyze customer profiles and documents from the Uni
 
 3. **Configure the agent**:
    - **Name**: "Customer Insights Knowledge Agent"
-   - **Description**: "Analyze customer profiles and investment documents"
-   - **Instructions**: "Extract customer preferences, investment goals, risk tolerance, and interests from profile documents"
+   - **Description and Instructions**: See the detailed configuration in `KNOWLEDGE_AGENT_DESCRIPTION.md`
+     - Copy the "Data Source Description" section into the agent's **Description** field
+     - Copy the "Agent Instructions" section into the agent's **Instructions** field
+   - These detailed descriptions help the agent understand the full scope of content and when to use this data source
 
 4. **Test the Knowledge Agent**:
    ```
-   Example query: "What investment interests does James Anderson have that aren't reflected in his current portfolio?"
+   Example queries:
+   - "What investment interests does James Anderson have that aren't reflected in his current portfolio?"
+   - "Describe Maria Rodriguez's risk tolerance and family circumstances that influence her investment decisions"
+   - "What are Robert Chen's long-term financial goals and how aggressive is his investment approach?"
+   - "What renewable energy investment opportunities are discussed in the research documents?"
+   - "Compare the investment philosophies of First National Trust and Pacific Coast Bank"
    ```
 
-### Step 7: Create a Multi-Agent System
+### Step 7: Create a Multi-Agent Supervisor
 
-Combine both agents into a unified system:
+Combine both agents into a unified system using the Multi-Agent Supervisor:
 
-1. **Create a new Agent**:
-   - Go to **AI/BI** → **Agents** → **Create Agent**
-   - Select **Multi-Agent**
+1. **Create a Multi-Agent Supervisor**:
+   - In your Databricks workspace, navigate to the **Multi-Agent Supervisor** interface
+   - Click **Build** to create a new multi-agent system
 
 2. **Add agents**:
    - **Agent 1**: Retail Investment Data Assistant (Genie)
-     - Role: "Query structured customer, account, and portfolio data"
+     - This agent queries structured lakehouse data
    - **Agent 2**: Customer Insights Knowledge Agent
-     - Role: "Analyze unstructured customer profiles and documents"
+     - This agent analyzes unstructured profiles and research documents
 
-3. **Configure orchestration**:
+3. **Configure the supervisor**:
    - **Name**: "Retail Investment Intelligence System"
-   - **Description**: "Comprehensive customer and portfolio analysis combining structured data and unstructured insights"
+   - **Description**: Use the description from `KNOWLEDGE_AGENT_DESCRIPTION.md` under "Multi-Agent Supervisor Description"
    - **Instructions**:
      ```
      You are an intelligent investment analysis system. Use the Genie agent to query
@@ -452,7 +488,7 @@ retail_investment/                                    # Catalog
 └────────────────────────────────────────────────────────┘
 ```
 
-## Example Use Cases
+## Example Use Cases and Sample Queries
 
 ### 1. Gap Analysis
 **Question**: "Find customers who express interest in renewable energy in their profiles but don't have any renewable energy stocks in their portfolios"
@@ -462,6 +498,12 @@ The multi-agent system will:
 2. Use Genie to check their current stock holdings
 3. Identify the gap and suggest potential investment opportunities
 
+**Sample Natural Language Queries**:
+- "Show me customers interested in renewable energy and tell me if they own any renewable energy stocks"
+- "Which customers have expressed interest in ESG investing but don't have ESG funds in their portfolios?"
+- "Find customers who mentioned real estate investing in their profiles and show me their current investment positions"
+- "Are there any customers talking about technology stocks in their profiles who don't actually own any?"
+
 ### 2. Risk Profile Mismatch
 **Question**: "Which customers have 'aggressive' risk profiles but conservative portfolio compositions?"
 
@@ -470,6 +512,12 @@ The system will:
 2. Analyze profile documents for narrative risk tolerance
 3. Flag mismatches for advisor review
 
+**Sample Natural Language Queries**:
+- "Show me customers with aggressive risk profiles and analyze if their portfolios match their risk tolerance"
+- "Which conservative investors have portfolios that are too aggressive for their stated preferences?"
+- "Find mismatches between customer risk profiles in the database and their investment behavior"
+- "Are there customers whose portfolio allocation doesn't align with their stated risk tolerance from their profiles?"
+
 ### 3. Data Quality Improvement
 **Question**: "What customer information exists in profiles that isn't captured in the database?"
 
@@ -477,6 +525,74 @@ The system will:
 1. Extract structured fields from customer profiles
 2. Compare with database schema and actual values
 3. Report missing or inconsistent data
+
+**Sample Natural Language Queries**:
+- "What personal information appears in customer profile documents that isn't in the structured database?"
+- "Find data quality gaps between customer profiles and account records"
+- "Are there investment preferences mentioned in profiles that aren't reflected in account settings?"
+- "Compare the structured customer data with profile narratives and identify missing fields"
+
+### 4. Customer Intelligence and Insights
+
+**Sample Natural Language Queries**:
+- "Tell me everything about customer C0001 - their accounts, holdings, transaction patterns, and personal preferences"
+- "What are the top investment interests mentioned across all customer profiles?"
+- "Show me customers in their 30s with high income and tell me about their investment strategies"
+- "Which banks have the most accounts and what types of customers do they serve?"
+- "Find customers who are planning for retirement and show me their current portfolio allocation"
+
+### 5. Portfolio and Holdings Analysis
+
+**Sample Natural Language Queries**:
+- "What are the most popular stocks held by customers and how are they performing?"
+- "Show me the total portfolio value for each customer and rank them"
+- "Which customers have the most diversified portfolios across different sectors?"
+- "Find all customers holding technology stocks and show their total tech exposure"
+- "What is the average portfolio size by customer risk profile?"
+
+### 6. Transaction and Account Activity
+
+**Sample Natural Language Queries**:
+- "Show me recent large transactions over $1000 and the accounts involved"
+- "Which customers have the most active trading patterns?"
+- "Find customers who frequently transfer money between accounts"
+- "What are the most common transaction types in the system?"
+- "Show me account balances and transaction activity for customers with investment accounts"
+
+### 7. Market Research and Investment Opportunities
+
+**Sample Natural Language Queries**:
+- "What does the market research say about renewable energy investment opportunities?"
+- "Summarize the technology sector analysis and current trends"
+- "What investment strategies are recommended for moderate risk investors?"
+- "Tell me about real estate investment options mentioned in the research documents"
+- "What are the key findings from the FinTech disruption report?"
+
+### 8. Banking Relationship Analysis
+
+**Sample Natural Language Queries**:
+- "Which customers bank with First National Trust and what services do they use?"
+- "Compare the customer base across different banks"
+- "What are the capabilities of Pacific Coast Bank's downtown branch?"
+- "Show me customers with accounts at multiple banks"
+- "What is the total assets under management by bank?"
+
+### 9. Cross-Sell and Personalization Opportunities
+
+**Sample Natural Language Queries**:
+- "Find customers interested in retirement planning who don't have sufficient retirement savings"
+- "Which high-income customers might be good candidates for wealth management services?"
+- "Show me customers with large cash balances who could benefit from investment accounts"
+- "Find customers interested in specific sectors and recommend stocks they should consider"
+- "Which customers have expressed interest in financial literacy workshops?"
+
+### 10. Compliance and Regulatory Insights
+
+**Sample Natural Language Queries**:
+- "What are the key compliance requirements for banks according to the regulatory documents?"
+- "Summarize the anti-money laundering regulations mentioned in the knowledge base"
+- "What capital requirements do banks need to maintain?"
+- "Tell me about consumer protection regulations affecting our banking operations"
 
 ## Technical Details
 
