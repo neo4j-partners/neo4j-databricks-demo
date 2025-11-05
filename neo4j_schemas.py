@@ -15,7 +15,7 @@ Design Philosophy:
     - Optimized for ETL pipelines and business logic
 
 Schemas are derived from the Neo4j importer model:
-    fintech_demo/neo4j_importer_model_financial_demo.json
+    retail_investment_demo/neo4j_importer_model_financial_demo.json
 
 Usage:
     from neo4j_schemas import NODE_SCHEMAS, get_node_schema

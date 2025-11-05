@@ -12,7 +12,7 @@
     
     <p>Born in March 1985, James is in his late 30s and is planning for long-term wealth accumulation. He has shown consistent saving habits, regularly transferring funds from his checking account to his savings and investment accounts. His credit score of 742 reflects his responsible financial management and timely bill payments.</p>
     
-    <p>James is particularly interested in emerging technologies and has expressed interest in expanding his portfolio to include renewable energy stocks and fintech companies. He values digital banking services and frequently uses mobile banking apps for account management. His transaction history shows regular payments for rent, utilities, and subscription services, indicating a stable lifestyle with predictable expenses.</p>
+    <p>James is particularly interested in emerging technologies and has expressed interest in expanding his portfolio to include renewable energy stocks and retail investment companies. He values digital banking services and frequently uses mobile banking apps for account management. His transaction history shows regular payments for rent, utilities, and subscription services, indicating a stable lifestyle with predictable expenses.</p>
     
     <p>The customer service notes indicate that James is tech-savvy and prefers self-service options but appreciates having access to financial advisors for major investment decisions. He has attended several of our investment seminars focused on technology sector trends and portfolio diversification strategies.</p>
 </body>

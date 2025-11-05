@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 # Unity Catalog Configuration
-CATALOG_NAME = "fintech"
+CATALOG_NAME = "retail_investment"
 SCHEMA_NAME = "default"
 
 
@@ -67,7 +67,7 @@ def get_node_table_name(node_label: str) -> str:
         node_label: Neo4j node label (e.g., "Customer", "Bank").
 
     Returns:
-        Unity Catalog table name (e.g., "fintech.default.neo4j_customer").
+        Unity Catalog table name (e.g., "retail_investment.default.neo4j_customer").
 
     Raises:
         ValueError: If node_label is not defined.
@@ -75,7 +75,7 @@ def get_node_table_name(node_label: str) -> str:
     Example:
         >>> table = get_node_table_name("Customer")
         >>> print(table)
-        fintech.default.neo4j_customer
+        retail_investment.default.neo4j_customer
     """
     if node_label not in NODE_TABLE_NAMES:
         available = ", ".join(sorted(NODE_TABLE_NAMES.keys()))
@@ -95,7 +95,7 @@ def get_relationship_table_name(relationship_type: str) -> str:
         relationship_type: Neo4j relationship type (e.g., "HAS_ACCOUNT", "AT_BANK").
 
     Returns:
-        Unity Catalog table name (e.g., "fintech.default.neo4j_has_account").
+        Unity Catalog table name (e.g., "retail_investment.default.neo4j_has_account").
 
     Raises:
         ValueError: If relationship_type is not defined.
@@ -103,7 +103,7 @@ def get_relationship_table_name(relationship_type: str) -> str:
     Example:
         >>> table = get_relationship_table_name("HAS_ACCOUNT")
         >>> print(table)
-        fintech.default.neo4j_has_account
+        retail_investment.default.neo4j_has_account
     """
     if relationship_type not in RELATIONSHIP_TABLE_NAMES:
         available = ", ".join(sorted(RELATIONSHIP_TABLE_NAMES.keys()))
