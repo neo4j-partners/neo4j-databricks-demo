@@ -774,12 +774,128 @@ retail_investment.retail_investment.retail_investment_volume
 
 **Files in Volume**: 14 `.txt` files from `data/profiles/`
 
-## Support
+## Advanced Multi-Agent Questions
 
-For issues related to:
-- **Neo4j Spark Connector**: See [Neo4j Spark Connector Documentation](https://neo4j.com/docs/spark/current/)
-- **Databricks Genie**: See [Databricks Genie Documentation](https://docs.databricks.com/en/genie/index.html)
-- **Databricks Knowledge Agents**: See [AI Agents Documentation](https://docs.databricks.com/en/generative-ai/agent-framework/index.html)
-- **Unity Catalog**: See [Unity Catalog Documentation](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)
-- **Unity Catalog Volumes**: See [Volumes Documentation](https://docs.databricks.com/en/connect/unity-catalog/volumes.html)
-- **Databricks Clusters**: See [Cluster Configuration Documentation](https://docs.databricks.com/en/compute/configure.html)
+These sophisticated questions demonstrate the full power of the multi-agent system by combining structured data analysis with unstructured document insights. These queries require coordination between the Genie agent (querying lakehouse tables) and the Knowledge Agent (analyzing customer profiles and research documents).
+
+### Personalized Investment Opportunity Discovery
+
+1. **"James Anderson has expressed interest in renewable energy stocks. What renewable energy companies are mentioned in our research documents, and does he currently own any of them? If not, which ones align with his moderate risk profile?"**
+   - Combines: Customer profile analysis + current portfolio holdings + investment research + risk alignment
+
+2. **"Identify customers who have mentioned interest in real estate investing in their profiles. Show me their current account balances and investment positions. Do any of them have sufficient capital to pursue real estate investments based on the investment guide recommendations?"**
+   - Combines: Profile text mining + account balance data + investment position analysis + research document recommendations
+
+3. **"Robert Chen is an aggressive investor interested in AI and autonomous vehicles. Based on the technology sector analysis, what AI and autonomous vehicle stocks are discussed in our research? Does Robert's current portfolio include these stocks, and what percentage of his portfolio do they represent?"**
+   - Combines: Customer preferences + technology research analysis + current holdings + portfolio allocation calculations
+
+4. **"Maria Rodriguez has expressed interest in ESG and socially responsible investing. Identify which companies in her current portfolio might not align with ESG principles, and suggest alternative stocks from our research documents that would better match her values while maintaining her conservative risk profile."**
+   - Combines: Customer values from profile + current portfolio analysis + ESG research insights + risk profile matching
+
+### Portfolio-Profile Alignment Analysis
+
+5. **"Find all customers with 'aggressive' risk profiles and analyze their actual portfolio compositions. Cross-reference with their profile narratives about risk tolerance. Identify any misalignments where portfolios are too conservative for stated preferences."**
+   - Combines: Structured risk profile data + portfolio holdings analysis + unstructured risk tolerance narratives
+
+6. **"Which customers have mentioned specific investment interests (renewable energy, technology, real estate, healthcare) in their profiles that are completely absent from their current portfolio holdings? Rank by account balance to prioritize high-value opportunities."**
+   - Combines: Text analysis of profiles + portfolio gap analysis + account value ranking
+
+7. **"Analyze the three customer profiles (James, Maria, Robert) and compare their stated investment philosophies with their actual transaction patterns and portfolio compositions. Highlight inconsistencies and opportunities for advisor outreach."**
+   - Combines: Deep profile analysis + transaction history + portfolio composition + behavioral analysis
+
+### Research-Driven Customer Targeting
+
+8. **"The renewable energy research document discusses Solar Energy Systems (SOEN) and Renewable Power Inc (RPOW). Which customers in our database have expressed interest in solar or renewable energy? Of those, who currently doesn't own these stocks and has sufficient account balance to invest?"**
+   - Combines: Research document analysis + profile text search + portfolio absence detection + account balance filtering
+
+9. **"According to the technology sector analysis, AI and cybersecurity are key growth themes. Identify customers working in technology fields (from their profiles) who might have professional insight into these trends. Do their portfolios reflect this knowledge?"**
+   - Combines: Profile occupation analysis + research themes + portfolio positioning
+
+10. **"The real estate investment guide discusses crowdfunding platforms requiring $5,000-$10,000 minimum investments. Which customers have mentioned real estate interest in their profiles and have checking or savings account balances exceeding $10,000 but no current real estate exposure?"**
+    - Combines: Research document details + profile interests + account balance analysis + portfolio gap
+
+### Life Stage and Financial Goal Analysis
+
+11. **"Maria Rodriguez is a single mother planning for college expenses and retirement. Based on her age, income from her profile, and current investment positions, is she on track to meet the retirement planning strategies outlined in our research documents? What gaps exist?"**
+    - Combines: Demographic data + income analysis + portfolio analysis + retirement planning benchmarks
+
+12. **"Robert Chen aims to build a $5 million portfolio by age 40. Based on his current portfolio value, age, and stated aggressive investment strategy, calculate his required annual return. Is this realistic given the technology sector analysis and his current holdings?"**
+    - Combines: Profile goals + current portfolio value + demographic data + sector return expectations
+
+13. **"Identify customers in their 30s and 40s (peak earning years) who have mentioned retirement planning in their profiles. Analyze their current investment account balances and compare to the retirement planning strategy recommendations for their age group."**
+    - Combines: Age filtering + profile text analysis + account balance analysis + retirement research benchmarks
+
+### Banking Relationship and Service Opportunities
+
+14. **"First National Trust and Pacific Coast Bank are profiled in our documents. Show me all customers banking at these institutions, their total account balances, and cross-reference their profiles for mentioned service preferences (digital vs. in-person). Are we delivering services aligned with their preferences?"**
+    - Combines: Bank relationship data + account aggregation + profile service preferences + institutional capabilities
+
+15. **"Which customers have accounts at multiple banks according to our structured data? Analyze their profiles to understand why they maintain multiple relationships. Are there consolidation opportunities or service gaps we need to address?"**
+    - Combines: Multi-bank relationship detection + profile analysis for banking satisfaction + service gap identification
+
+16. **"The bank profiles mention wealth management services. Identify high-net-worth customers (based on total account balances and investment positions) who haven't been mentioned as using wealth management services in their profiles. Calculate total assets under management potential."**
+    - Combines: Net worth calculation from positions + profile service usage analysis + market opportunity sizing
+
+### Regulatory and Compliance Intelligence
+
+17. **"According to the regulatory compliance documents, what are the key AML (anti-money laundering) monitoring requirements? Identify customers with transaction patterns showing frequent large transfers between accounts. Cross-reference their profiles for legitimate business reasons that might explain this activity."**
+    - Combines: Regulatory requirements + transaction pattern analysis + profile business context
+
+18. **"The compliance documents discuss customer suitability requirements. For each customer, compare their stated risk profile in structured data with the risk tolerance narratives in their profile documents. Flag any customers where documentation doesn't align and might need updated suitability assessments."**
+    - Combines: Structured risk data + unstructured risk narratives + compliance requirement matching
+
+### Sector Rotation and Market Timing Opportunities
+
+19. **"The technology sector analysis mentions valuation concerns with median P/E of 29.4 vs. historical 22.6. Identify customers heavily concentrated in technology stocks (>50% of portfolio). Do their profiles indicate they understand these risks, or should advisors reach out with rebalancing recommendations?"**
+    - Combines: Sector concentration calculations + valuation context from research + profile financial sophistication assessment
+
+20. **"Based on the market research documents, which investment themes are emerging (AI, renewable energy, cybersecurity, etc.)? For each theme, identify the top 3 customers by account balance who have expressed interest in these themes but have less than 10% portfolio allocation to them."**
+    - Combines: Research theme extraction + profile interest matching + portfolio allocation analysis + customer ranking
+
+### Data Quality and Enrichment Opportunities
+
+21. **"Compare all structured customer data fields (age, income, risk profile, credit score) with information mentioned in the customer profile narratives. Create a data quality report showing which fields exist in profiles but are missing or inconsistent in the structured database."**
+    - Combines: Structured data completeness + unstructured data extraction + data quality assessment
+
+22. **"The customer profiles mention specific stock holdings and investment interests. Compare these with actual position records in the database. Identify any stocks mentioned in profiles that don't appear in current positions (potential closed positions or future interests)."**
+    - Combines: Profile text stock extraction + position table comparison + temporal analysis
+
+23. **"Analyze customer service notes and preferences mentioned in profiles (digital banking, in-person meetings, advisory preferences). Create a service preference matrix showing what we know from profiles vs. what's captured in structured customer service fields."**
+    - Combines: Profile text mining + structured service data + preference mapping
+
+### Cross-Sell and Product Penetration
+
+24. **"Identify customers who have both checking and savings accounts but no investment accounts. Analyze their profiles for income levels, savings patterns, and any mentioned investment interests. Rank by cross-sell potential based on account balances and profile signals."**
+    - Combines: Account type analysis + profile income/interest extraction + savings pattern + opportunity scoring
+
+25. **"The investment strategy guides discuss different approaches for conservative, moderate, and aggressive investors. For each risk category, identify customers whose profile narratives match that category. Do they have the appropriate account types and services for their investment approach?"**
+    - Combines: Research strategy recommendations + profile classification + product penetration analysis
+
+### Competitive Intelligence and Customer Retention
+
+26. **"James Anderson values digital banking and uses mobile apps frequently. Pacific Coast Bank is profiled as having strong digital capabilities. Does James bank with them? If not, and given his service preferences, is there a retention risk we should address?"**
+    - Combines: Customer preferences + institutional capabilities + relationship mapping + retention risk
+
+27. **"According to the bank profiles, First National Trust emphasizes personalized service while Pacific Coast Bank focuses on digital innovation. Match our customers to the bank that best fits their service preferences from their profiles. Identify any customers banking with a mismatched institution."**
+    - Combines: Institutional positioning + customer service preferences + relationship alignment + satisfaction prediction
+
+### Behavioral Finance and Advisory Opportunities
+
+28. **"Robert Chen trades 8-10 times per month according to his profile. Analyze his actual transaction history to verify this trading frequency. Calculate trading costs and compare his returns to a buy-and-hold strategy. Should advisors discuss behavioral finance concepts with him?"**
+    - Combines: Profile behavioral claims + transaction pattern analysis + performance calculation + advisory intervention identification
+
+29. **"Maria Rodriguez maintains an emergency fund covering 6 months of expenses according to her profile. Based on her mentioned monthly expenses and current savings account balance, verify this claim. Is her emergency fund adequately sized based on financial planning best practices from our research?"**
+    - Combines: Profile financial claims + account balance verification + research recommendations + planning adequacy
+
+30. **"The investment strategy documents emphasize diversification. For each customer, calculate their portfolio diversification metrics (sector concentration, stock count, position sizing). Compare against diversification principles from the research. Identify customers who need rebalancing conversations."**
+    - Combines: Portfolio diversification calculations + research best practices + risk assessment + advisory trigger
+
+### Comprehensive Customer Intelligence Reports
+
+31. **"Generate a complete financial intelligence report for customer C0001 (James Anderson) including: all account balances and holdings, transaction patterns, stated investment interests from his profile, gaps between interests and holdings, recommendations from research documents that match his profile, and next best actions for his advisor."**
+    - Combines: Full structured data profile + complete document analysis + gap analysis + research matching + actionable recommendations
+
+32. **"Create a market opportunity dashboard showing: total customers by risk profile, top investment interests mentioned across all profiles, current portfolio exposures by sector, gaps between interests and holdings, and total addressable assets for each investment theme from our research documents."**
+    - Combines: Customer segmentation + aggregate profile analysis + portfolio analytics + gap quantification + market sizing
+
+These questions showcase the multi-agent system's ability to deliver insights that would be impossible with either structured or unstructured data alone. They demonstrate practical use cases for financial advisors, relationship managers, and business analysts in retail investment banking.
