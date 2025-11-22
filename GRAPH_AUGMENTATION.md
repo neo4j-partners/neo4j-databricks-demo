@@ -4,6 +4,8 @@
 
 The future of enterprise data architecture lies not in choosing between graph databases and lakehouse platforms, but in intelligently combining them. This blog explores a powerful pattern: using AI agents to enrich knowledge graphs by bridging the gap between structured graph data and unstructured documents, creating a continuous loop of insight extraction and graph enhancement.
 
+> **New to these concepts?** If you're unfamiliar with Databricks lakehouse architecture, AI agents, knowledge graphs, or Neo4j Graph Data Science, we recommend reading the [Background Concepts](BACKGROUND_CONCEPTS.md) guide first. It provides foundational explanations of the key technologies used in this blog post.
+
 ## The Evolution from Traditional Data Engineering to Agentic Graph Enrichment
 
 ### Traditional Data Engineering
