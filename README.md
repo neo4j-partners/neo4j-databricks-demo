@@ -188,13 +188,13 @@ Create a dedicated cluster with the Neo4j Spark Connector:
    NEO4J_URL=neo4j+s://<your-neo4j-instance>
    NEO4J_USERNAME=<your-username>
    NEO4J_DATABASE=<your-database>
-   PYTHON_REPO_URL=/Workspace/<path-to-python-modules>
    ```
 
-3. **Store Neo4j password** in Databricks secrets:
+3. **Store Neo4j password and url* in Databricks secrets:
    ```bash
    # Using Databricks CLI
    databricks secrets create-scope neo4j
+   databricks secrets put-secret neo4j password
    databricks secrets put-secret neo4j password
    ```
 
@@ -734,14 +734,6 @@ neo4j==6.0.2
 - **Cluster Mode**: Standard
 - **Recommended Workers**: 2-4 (adjust based on data volume)
 
-### Environment Variables
-
-```bash
-NEO4J_URL=neo4j+s://<your-neo4j-instance>
-NEO4J_USERNAME=<your-username>
-NEO4J_DATABASE=<your-database>
-PYTHON_REPO_URL=/Workspace/<path-to-python-modules>
-```
 
 ### Databricks Secrets
 
@@ -751,6 +743,10 @@ databricks secrets create-scope neo4j
 
 # Store Neo4j password
 databricks secrets put-secret neo4j password
+
+# Store Neo4j url - neo4j+s://<your-neo4j-instance>
+databricks secrets put-secret neo4j url
+
 ```
 
 ### Unity Catalog Resources
