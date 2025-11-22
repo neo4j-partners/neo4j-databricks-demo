@@ -6,7 +6,7 @@ The future of enterprise data architecture lies not in choosing between graph da
 
 ## The Evolution from Traditional Data Engineering to Agentic Graph Enrichment
 
-### Use Case 1: Traditional Data Engineering
+### Traditional Data Engineering
 
 Traditional data engineering follows a familiar pattern. Organizations maintain both structured and unstructured data in their lakehouse platforms. Structured data lives in tables with well-defined schemas, while unstructured data exists as documents, PDFs, text files, and other free-form content. Both data types undergo ETL (Extract, Transform, Load) processes that ultimately populate a graph database.
 
@@ -14,9 +14,9 @@ In this conventional approach, the graph database serves as a destination. Data 
 
 This approach works well for known entities and relationships. If you understand your data model upfront, you can design schemas, write transformation logic, and build a graph that accurately represents your business domain. However, it has limitations. What happens when valuable insights hide within unstructured documents? What if customer profiles mention interests that never make it into structured fields? How do you capture the nuanced relationships that humans describe in text but traditional ETL processes miss?
 
-### Use Case 2: Graph Enrichment with Agentic Intelligence
+### Graph Enrichment with Agentic Intelligence
 
-The second use case transforms the graph database from a destination into a living, evolving knowledge structure. This approach introduces a critical new step: after the initial graph creation, an agent-driven enrichment process extracts the graph data back out, analyzes it alongside unstructured sources, and discovers opportunities to enhance the graph with new nodes, relationships, and attributes.
+An agentic approach to this is to transform the graph database from a destination into a living, evolving knowledge structure. This approach introduces a critical new step: after the initial graph creation, an agent-driven enrichment process extracts the graph data back out, analyzes it alongside unstructured sources, and discovers opportunities to enhance the graph with new nodes, relationships, and attributes.
 
 The enrichment process creates a feedback loop. Rather than letting the graph remain static until the next scheduled ETL run, agentic systems continuously analyze the interplay between structured graph data and unstructured documents. These agents become decision points for applications, determining when and how to augment the graph based on discovered insights.
 
