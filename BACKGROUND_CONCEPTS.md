@@ -86,7 +86,7 @@ The **Louvain** algorithm is a popular community detection method that optimizes
 
 ### Path Finding: Discovering Connections
 
-**Path Finding** algorithms discover how nodes connect through the graph, revealing relationships that aren't immediately obvious. Finding the shortest path between two customers might expose unexpected connections—both bank at institutions that share a correspondent bank, creating an indirect relationship through multiple hops. **Shortest Path** algorithms (like Dijkstra's) find the minimum-cost route between nodes, useful for understanding transaction flows or tracing influence chains. **A\*** (A-star) extends this with heuristics to guide path finding more efficiently.
+**Path Finding** algorithms discover how nodes connect through the graph, revealing relationships that aren't immediately obvious. Finding the shortest path between two customers might expose unexpected connections—both bank at institutions that share a correspondent bank, creating an indirect relationship through multiple hops. **Shortest Path** algorithms (like Dijkstra's) find the minimum-cost route between nodes, useful for understanding transaction flows or tracing influence chains. **A*** (A-star) extends this with heuristics to guide path finding more efficiently.
 
 In financial applications, path finding helps identify risk concentrations. If multiple customer accounts all connect to the same investment positions through various intermediary accounts, a single stock's poor performance might affect more customers than obvious direct holdings suggest. Path algorithms also support compliance use cases, detecting undisclosed relationships or potential conflicts of interest by discovering unexpected connection paths.
 
