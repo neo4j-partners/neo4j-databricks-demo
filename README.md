@@ -195,7 +195,6 @@ Create a dedicated cluster with the Neo4j Spark Connector:
    # Using Databricks CLI
    databricks secrets create-scope neo4j
    databricks secrets put-secret neo4j password
-   databricks secrets put-secret neo4j password
    ```
 
 4. **Upload Python modules**:
