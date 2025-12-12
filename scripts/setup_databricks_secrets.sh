@@ -13,8 +13,6 @@
 #   - .env file with required variables
 #
 
-set -e
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$PROJECT_ROOT/.env"
@@ -42,10 +40,18 @@ fi
 echo -e "${GREEN}Found .env file: $ENV_FILE${NC}"
 echo ""
 
-# Load .env file
-set -a
-source "$ENV_FILE"
-set +a
+# Parse .env file manually to avoid conflicts with Databricks CLI auth
+get_env_value() {
+    local key=$1
+    grep "^${key}=" "$ENV_FILE" | head -1 | cut -d'=' -f2-
+}
+
+NEO4J_URI=$(get_env_value "NEO4J_URI")
+NEO4J_USERNAME=$(get_env_value "NEO4J_USERNAME")
+NEO4J_PASSWORD=$(get_env_value "NEO4J_PASSWORD")
+DATABRICKS_CATALOG=$(get_env_value "DATABRICKS_CATALOG")
+DATABRICKS_SCHEMA=$(get_env_value "DATABRICKS_SCHEMA")
+DATABRICKS_VOLUME=$(get_env_value "DATABRICKS_VOLUME")
 
 # Validate required variables
 REQUIRED_VARS=(
@@ -95,50 +101,68 @@ if ! command -v databricks &> /dev/null; then
 fi
 
 echo -e "${GREEN}Databricks CLI found.${NC}"
-echo ""
 
-# Check if CLI is configured
-if ! databricks auth describe &> /dev/null 2>&1; then
-    echo -e "${YELLOW}Warning: Databricks CLI may not be configured.${NC}"
-    echo "Configure with: databricks configure --token"
-    echo ""
-fi
+# Detect CLI version
+CLI_VERSION=$(databricks --version 2>/dev/null | head -1 || echo "unknown")
+echo "CLI Version: $CLI_VERSION"
+echo ""
 
 # Create secret scope (ignore error if already exists)
 echo "Creating secret scope '$SCOPE_NAME'..."
-if databricks secrets create-scope "$SCOPE_NAME" 2>/dev/null; then
+OUTPUT=$(databricks secrets create-scope "$SCOPE_NAME" 2>&1)
+if [ $? -eq 0 ]; then
     echo -e "${GREEN}Secret scope '$SCOPE_NAME' created.${NC}"
 else
-    echo -e "${YELLOW}Secret scope '$SCOPE_NAME' already exists (or error occurred).${NC}"
+    echo -e "${YELLOW}Secret scope '$SCOPE_NAME' already exists (continuing...).${NC}"
 fi
 echo ""
 
-# Function to create a secret
-create_secret() {
-    local key=$1
-    local value=$2
-
-    echo "  Setting secret: $key"
-    if echo -n "$value" | databricks secrets put-secret "$SCOPE_NAME" "$key" --value-stdin 2>/dev/null; then
-        echo -e "    ${GREEN}OK${NC}"
-    else
-        # Try alternative method
-        if databricks secrets put-secret "$SCOPE_NAME" "$key" --string-value "$value" 2>/dev/null; then
-            echo -e "    ${GREEN}OK${NC}"
-        else
-            echo -e "    ${RED}FAILED${NC}"
-            return 1
-        fi
-    fi
-}
-
 # Create secrets
 echo "Creating secrets in scope '$SCOPE_NAME'..."
-create_secret "username" "$NEO4J_USERNAME"
-create_secret "password" "$NEO4J_PASSWORD"
-create_secret "url" "$NEO4J_URI"
-create_secret "volume_path" "$VOLUME_PATH"
+FAILED=0
+
+echo -n "  Setting secret: username ... "
+databricks secrets put-secret "$SCOPE_NAME" "username" --string-value "$NEO4J_USERNAME" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}OK${NC}"
+else
+    echo -e "${RED}FAILED${NC}"
+    FAILED=$((FAILED + 1))
+fi
+
+echo -n "  Setting secret: password ... "
+databricks secrets put-secret "$SCOPE_NAME" "password" --string-value "$NEO4J_PASSWORD" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}OK${NC}"
+else
+    echo -e "${RED}FAILED${NC}"
+    FAILED=$((FAILED + 1))
+fi
+
+echo -n "  Setting secret: url ... "
+databricks secrets put-secret "$SCOPE_NAME" "url" --string-value "$NEO4J_URI" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}OK${NC}"
+else
+    echo -e "${RED}FAILED${NC}"
+    FAILED=$((FAILED + 1))
+fi
+
+echo -n "  Setting secret: volume_path ... "
+databricks secrets put-secret "$SCOPE_NAME" "volume_path" --string-value "$VOLUME_PATH" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}OK${NC}"
+else
+    echo -e "${RED}FAILED${NC}"
+    FAILED=$((FAILED + 1))
+fi
+
 echo ""
+
+if [ $FAILED -gt 0 ]; then
+    echo -e "${RED}$FAILED secret(s) failed to create.${NC}"
+    exit 1
+fi
 
 # Verify secrets
 echo "Verifying secrets..."

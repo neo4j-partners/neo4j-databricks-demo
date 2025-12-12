@@ -138,53 +138,15 @@ def delete_catalog_contents(client: WorkspaceClient, catalog_name: str) -> None:
 
     print(f"  Found {len(schemas)} schema(s)")
 
-    print(f"\n[2/2] Deleting contents...")
+    print(f"\n[2/2] Deleting schemas (with all contents)...")
     for schema in schemas:
         schema_full = f"{catalog_name}.{schema.name}"
-        print(f"\n  Schema: {schema_full}")
-
-        # Delete volumes first
+        print(f"  Deleting: {schema_full}")
         try:
-            for volume in client.volumes.list(catalog_name=catalog_name, schema_name=schema.name):
-                volume_full = f"{schema_full}.{volume.name}"
-                print(f"    Deleting volume: {volume_full}")
-                try:
-                    client.volumes.delete(volume_full)
-                except Exception as e:
-                    print(f"      Error: {e}")
+            client.schemas.delete(schema_full, force=True)
+            print(f"    Deleted (including all volumes, tables, functions)")
         except Exception as e:
-            print(f"    Error listing volumes: {e}")
-
-        # Delete tables
-        try:
-            for table in client.tables.list(catalog_name=catalog_name, schema_name=schema.name):
-                table_full = f"{schema_full}.{table.name}"
-                print(f"    Deleting table: {table_full}")
-                try:
-                    client.tables.delete(table_full)
-                except Exception as e:
-                    print(f"      Error: {e}")
-        except Exception as e:
-            print(f"    Error listing tables: {e}")
-
-        # Delete functions
-        try:
-            for func in client.functions.list(catalog_name=catalog_name, schema_name=schema.name):
-                func_full = f"{schema_full}.{func.name}"
-                print(f"    Deleting function: {func_full}")
-                try:
-                    client.functions.delete(func_full)
-                except Exception as e:
-                    print(f"      Error: {e}")
-        except Exception as e:
-            print(f"    Error listing functions: {e}")
-
-        # Delete schema
-        print(f"    Deleting schema: {schema.name}")
-        try:
-            client.schemas.delete(schema_full)
-        except Exception as e:
-            print(f"      Error: {e}")
+            print(f"    Error: {e}")
 
 
 def get_client() -> WorkspaceClient:
