@@ -50,9 +50,9 @@ This lab combines the Genie and Knowledge Agent into a unified system that answe
 Basic tests to verify the system works:
 
 ```
-"Find customers interested in renewable energy stocks and show me their current holdings"
-"Which customers have risk profiles that don't match their portfolio composition?"
-"What information exists in customer profiles that isn't captured in the structured database?"
+Find customers interested in renewable energy stocks and show me their current holdings
+Which customers have risk profiles that don't match their portfolio composition?
+What information exists in customer profiles that isn't captured in the structured database?
 ```
 
 ---
