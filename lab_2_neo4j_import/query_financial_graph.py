@@ -26,6 +26,9 @@ Best Practices Applied:
     - Uses Spark DataSource V2 API (org.neo4j.spark.DataSource)
     - Uses 'query' option for complex Cypher with multiple MATCH clauses
     - Pushdown optimizations enabled by default
+    - LIMIT applied via Spark .limit() not in Cypher (Spark Connector restriction)
+    - NULL values filtered before sorting
+    - COLLECT/UNWIND pattern for percentage calculations (no window functions in Cypher)
 """
 
 import time
@@ -51,19 +54,21 @@ QUERY_TO_RUN = RUN_ALL
 QUERIES = {
     "portfolio": {
         "title": "Top 10 Customers by Portfolio Value",
+        "limit": 10,
         "query": """
             MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)-[:HAS_POSITION]->(p:Position)
             WITH c, round(SUM(p.current_value), 2) AS total_portfolio_value
+            WHERE total_portfolio_value IS NOT NULL
             RETURN
                 c.customer_id AS customer_id,
                 c.first_name + ' ' + c.last_name AS customer_name,
                 total_portfolio_value
             ORDER BY total_portfolio_value DESC
-            LIMIT 10
         """,
     },
     "diversified": {
         "title": "Accounts with Multiple Holdings",
+        "limit": 10,
         "query": """
             MATCH (a:Account)-[:HAS_POSITION]->(p:Position)
             WITH a, COUNT(p) AS position_count, round(SUM(p.current_value), 2) AS total_value
@@ -74,25 +79,27 @@ QUERIES = {
                 position_count AS num_positions,
                 total_value AS portfolio_value
             ORDER BY position_count DESC
-            LIMIT 10
         """,
     },
     "sectors": {
         "title": "Investment Allocation by Sector",
+        "limit": None,
         "query": """
             MATCH (a:Account)-[:HAS_POSITION]->(p:Position)-[:OF_SECURITY]->(s:Stock)-[:OF_COMPANY]->(c:Company)
             WHERE c.sector IS NOT NULL
             WITH c.sector AS sector, round(SUM(p.current_value), 2) AS sector_value
-            WITH sector, sector_value, SUM(sector_value) OVER () AS total_value
+            WITH COLLECT({sector: sector, value: sector_value}) AS sectors, SUM(sector_value) AS total_value
+            UNWIND sectors AS s
             RETURN
-                sector,
-                sector_value,
-                round(sector_value * 100.0 / total_value, 2) AS pct_of_total
-            ORDER BY sector_value DESC
+                s.sector AS sector,
+                s.value AS sector_value,
+                round(s.value * 100.0 / total_value, 2) AS pct_of_total
+            ORDER BY s.value DESC
         """,
     },
     "active_senders": {
         "title": "Most Active Sending Accounts",
+        "limit": None,
         "query": """
             MATCH (a:Account)-[:PERFORMS]->(t:Transaction)
             WITH a, COUNT(t) AS tx_count, round(SUM(t.amount), 2) AS total_sent
@@ -109,6 +116,7 @@ QUERIES = {
     },
     "bidirectional": {
         "title": "Accounts with Bidirectional Transaction Flow",
+        "limit": 10,
         "query": """
             MATCH (a:Account)-[:PERFORMS]->(:Transaction)
             WITH a, COUNT(*) AS sent_count
@@ -123,11 +131,11 @@ QUERIES = {
                 sent_count,
                 received_count
             ORDER BY sent_count + received_count DESC
-            LIMIT 10
         """,
     },
     "high_value": {
         "title": "High-Value Transactions (> $1,000)",
+        "limit": 10,
         "query": """
             MATCH (from:Account)-[:PERFORMS]->(t:Transaction)-[:BENEFITS_TO]->(to:Account)
             WHERE t.amount > 1000
@@ -138,11 +146,11 @@ QUERIES = {
                 t.transaction_date AS date,
                 t.description AS description
             ORDER BY t.amount DESC
-            LIMIT 10
         """,
     },
     "risk_profile": {
         "title": "Portfolio Characteristics by Risk Profile",
+        "limit": None,
         "query": """
             MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)
             WHERE c.risk_profile IS NOT NULL
@@ -266,51 +274,112 @@ def display_results(title: str, df):
     print()
 
 
+def verify_neo4j_connection(config: dict) -> bool:
+    """Verify Neo4j connectivity."""
+    print("=" * 70)
+    print("NEO4J CONNECTION TEST")
+    print("=" * 70)
+    print(f"URL: {config['neo4j_url']}")
+    print(f"Database: {config['neo4j_database']}")
+    print("")
+
+    try:
+        print("[DEBUG] Executing connection test...")
+        start_time = time.time()
+
+        test_df = run_query(config, "RETURN 'Connected' AS status")
+        result = test_df.collect()
+        elapsed = time.time() - start_time
+
+        print(f"  [OK] Query executed in {elapsed:.2f}s")
+        print(f"  [OK] Result: {result}")
+        print("")
+        print("=" * 70)
+        print("[OK] NEO4J CONNECTION SUCCESSFUL!")
+        print("=" * 70)
+        return True
+
+    except Exception as e:
+        print(f"  [FAIL] Connection failed: {type(e).__name__}")
+        print(f"         {str(e)}")
+        return False
+
+
 def main():
-    if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
-        print("Error: Missing Neo4j credentials in .env file")
-        print("Required: NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD")
-        sys.exit(1)
+    """Main entry point for the query script."""
+    print("")
+    print("=" * 70)
+    print("FINANCIAL GRAPH QUERY APPLICATION")
+    print("=" * 70)
+    print("")
 
-    query_name = sys.argv[1] if len(sys.argv) > 1 else "all"
+    total_start = time.time()
 
-    if query_name not in QUERIES and query_name != "all":
-        print(f"Unknown query: {query_name}")
-        print(f"Available: {', '.join(QUERIES.keys())}, all")
-        sys.exit(1)
+    # Validate query selection
+    query_name = QUERY_TO_RUN
+    if query_name not in QUERIES and query_name != RUN_ALL:
+        print(f"[ERROR] Unknown query: {query_name}")
+        print(f"Available options:")
+        print(f"  QUERY_PORTFOLIO      = '{QUERY_PORTFOLIO}'")
+        print(f"  QUERY_DIVERSIFIED    = '{QUERY_DIVERSIFIED}'")
+        print(f"  QUERY_SECTORS        = '{QUERY_SECTORS}'")
+        print(f"  QUERY_ACTIVE_SENDERS = '{QUERY_ACTIVE_SENDERS}'")
+        print(f"  QUERY_BIDIRECTIONAL  = '{QUERY_BIDIRECTIONAL}'")
+        print(f"  QUERY_HIGH_VALUE     = '{QUERY_HIGH_VALUE}'")
+        print(f"  QUERY_RISK_PROFILE   = '{QUERY_RISK_PROFILE}'")
+        print(f"  RUN_ALL              = '{RUN_ALL}'")
+        return False
 
-    print(f"Initializing Spark with Neo4j Connector...")
-    print(f"Neo4j URL: {NEO4J_URI}")
-    print(f"Database: {NEO4J_DATABASE}")
+    print(f"Selected query: {query_name}")
+    print("")
 
-    try:
-        spark = create_spark_session()
-    except Exception as e:
-        print(f"Failed to create Spark session: {e}")
-        print()
-        print("Make sure PySpark is installed: uv add pyspark")
-        sys.exit(1)
+    # Step 1: Load configuration
+    config = load_config()
+    print("")
 
-    # Test connection
-    try:
-        test_df = run_query(spark, "RETURN 'Connected!' AS status")
-        status = test_df.collect()[0]["status"]
-        print(f"Connection: {status}")
-    except Exception as e:
-        print(f"Connection failed: {e}")
-        spark.stop()
-        sys.exit(1)
+    # Step 2: Verify connection
+    if not verify_neo4j_connection(config):
+        print("[ERROR] Neo4j connection failed!")
+        return False
+    print("")
 
-    # Run queries
-    queries_to_run = QUERIES.keys() if query_name == "all" else [query_name]
+    # Step 3: Run queries
+    print("=" * 70)
+    print("EXECUTING QUERIES")
+    print("=" * 70)
+    print("")
+
+    queries_to_run = QUERIES.keys() if query_name == RUN_ALL else [query_name]
 
     for name in queries_to_run:
         q = QUERIES[name]
-        df = run_query(spark, q["query"])
-        display_results(q["title"], df)
+        print(f"[DEBUG] Running query: {name}")
+        query_start = time.time()
 
-    spark.stop()
+        try:
+            df = run_query(config, q["query"])
+            # Apply limit via Spark (not in Cypher) due to Spark Connector restriction
+            if q.get("limit"):
+                df = df.limit(q["limit"])
+            display_results(q["title"], df)
+            query_elapsed = time.time() - query_start
+            print(f"  [OK] Query completed in {query_elapsed:.2f}s")
+        except Exception as e:
+            print(f"  [FAIL] Query failed: {type(e).__name__}")
+            print(f"         {str(e)[:200]}")
+        print("")
+
+    total_elapsed = time.time() - total_start
+
+    print("=" * 70)
+    print("QUERY EXECUTION COMPLETE")
+    print("=" * 70)
+    print(f"Total time: {total_elapsed:.2f}s")
+    print(f"Queries run: {len(list(queries_to_run))}")
+    print("=" * 70)
+
+    return True
 
 
-if __name__ == "__main__":
-    main()
+# Run main when script is executed
+main()

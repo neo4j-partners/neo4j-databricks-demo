@@ -2,8 +2,8 @@
 Upload local data files to Databricks Unity Catalog Volume.
 
 Usage:
-    uv run python src/upload_to_databricks.py           # Upload files
-    uv run python src/upload_to_databricks.py --delete  # Delete all schemas/volumes in catalog
+    uv run python lab_1_databricks_upload/upload_to_databricks.py           # Upload files
+    uv run python lab_1_databricks_upload/upload_to_databricks.py --delete  # Delete all schemas/volumes in catalog
 
 Authentication: Set DATABRICKS_HOST and DATABRICKS_TOKEN in .env file.
 """
