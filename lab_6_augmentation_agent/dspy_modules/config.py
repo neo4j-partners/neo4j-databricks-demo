@@ -1,12 +1,13 @@
 """
-DSPy Language Model Configuration for Databricks.
+DSPy Language Model Configuration for Databricks Multi-Agent Supervisor.
 
 This module handles the configuration of DSPy to work with Databricks
-model serving endpoints. It supports both automatic authentication when
-running on Databricks and manual authentication via environment variables.
+Multi-Agent Supervisor (MAS) endpoints created in Lab 5. It supports both
+automatic authentication when running on Databricks and manual authentication
+via environment variables.
 
-Includes a custom LM adapter for Databricks Multi-Agent Supervisor endpoints
-that use the Responses API format.
+The MAS endpoint routes queries to the Genie + Knowledge Agent for combined
+structured and unstructured data analysis.
 
 References:
     - https://docs.databricks.com/aws/en/generative-ai/dspy/
@@ -38,8 +39,9 @@ for var in _CONFLICTING_AUTH_VARS:
     os.environ.pop(var, None)
 
 
-# Default model endpoint name
-DEFAULT_ENDPOINT: Final[str] = os.environ.get("LLM_ENDPOINT_NAME", "mas-3ae5a347-endpoint")
+# Default MAS endpoint name (from Lab 5)
+# Override via MAS_ENDPOINT_NAME environment variable if needed
+DEFAULT_ENDPOINT: Final[str] = os.environ.get("MAS_ENDPOINT_NAME", "mas-3ae5a347-endpoint")
 
 
 class DatabricksResponsesLM(LM):
@@ -59,28 +61,25 @@ class DatabricksResponsesLM(LM):
         {
             "messages": [{"role": "user", "content": "..."}]
         }
+
+    Authentication is handled automatically by WorkspaceClient:
+    - On Databricks: Uses runtime's built-in authentication
+    - Locally: Uses DATABRICKS_HOST and DATABRICKS_TOKEN from environment
     """
 
     def __init__(
         self,
         model: str,
-        api_key: str | None = None,
-        api_base: str | None = None,
         **kwargs: Any,
     ) -> None:
         """
         Initialize the Databricks Responses API LM.
 
         Args:
-            model: The Databricks model endpoint name.
-            api_key: Databricks API token.
-            api_base: Databricks workspace URL.
+            model: The Databricks MAS endpoint name from Lab 5.
             **kwargs: Additional arguments (temperature, max_tokens, etc.)
         """
-        # Store config before calling super().__init__
         self._model_name = model
-        self._api_key = api_key or os.environ.get("DATABRICKS_TOKEN")
-        self._api_base = api_base or os.environ.get("DATABRICKS_HOST")
         self._client: Any = None
 
         # Initialize parent with model name
@@ -155,56 +154,38 @@ def get_lm(
     model_name: str | None = None,
     temperature: float = 0.1,
     max_tokens: int = 4000,
-    use_responses_api: bool = True,
 ) -> LM:
     """
-    Create a DSPy Language Model configured for Databricks.
+    Create a DSPy Language Model configured for Databricks MAS endpoint.
+
+    This function ONLY supports Multi-Agent Supervisor endpoints from Lab 5.
+    The MAS endpoint uses the Databricks Responses API format, which requires
+    a custom LM adapter (DatabricksResponsesLM).
+
+    Authentication is handled automatically by WorkspaceClient:
+    - On Databricks: Uses runtime's built-in authentication
+    - Locally: Uses DATABRICKS_HOST and DATABRICKS_TOKEN from .env
 
     Args:
-        model_name: The Databricks model endpoint name. If None, uses DEFAULT_ENDPOINT.
+        model_name: The MAS endpoint name from Lab 5. If None, uses DEFAULT_ENDPOINT.
         temperature: Sampling temperature (0.0-1.0). Lower = more deterministic.
         max_tokens: Maximum tokens in the response.
-        use_responses_api: If True, use DatabricksResponsesLM for MAS endpoints.
-                          If False, use standard OpenAI-compatible LM.
 
     Returns:
-        Configured dspy.LM instance.
+        Configured dspy.LM instance for MAS endpoint.
 
     Raises:
         RuntimeError: If Databricks authentication fails.
     """
     endpoint = model_name or DEFAULT_ENDPOINT
 
-    # Get Databricks configuration from environment
-    databricks_host = os.environ.get("DATABRICKS_HOST")
-    databricks_token = os.environ.get("DATABRICKS_TOKEN")
-
-    if not databricks_host or not databricks_token:
-        raise RuntimeError(
-            "Databricks credentials not found. Set DATABRICKS_HOST and DATABRICKS_TOKEN "
-            "in your .env file or environment."
-        )
-
-    if use_responses_api:
-        # Use custom LM for Multi-Agent Supervisor endpoints
-        lm = DatabricksResponsesLM(
-            model=endpoint,
-            api_key=databricks_token,
-            api_base=databricks_host,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-    else:
-        # Use standard OpenAI-compatible LM for Foundation Model APIs
-        host = databricks_host.rstrip("/")
-        api_base = f"{host}/serving-endpoints"
-        lm = dspy.LM(
-            model=f"openai/{endpoint}",
-            api_key=databricks_token,
-            api_base=api_base,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+    # DatabricksResponsesLM is specifically designed for MAS endpoints
+    # which use the Responses API format (not OpenAI Chat Completions)
+    lm = DatabricksResponsesLM(
+        model=endpoint,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
 
     return lm
 
@@ -213,25 +194,22 @@ def configure_dspy(
     model_name: str | None = None,
     temperature: float = 0.1,
     max_tokens: int = 4000,
-    use_json_adapter: bool = False,
-    use_responses_api: bool = True,
     track_usage: bool = True,
 ) -> LM:
     """
-    Configure DSPy globally with a Databricks language model.
+    Configure DSPy globally with the Databricks MAS endpoint.
 
     This sets up the default LM and adapter for all DSPy operations.
     Call this once at application startup.
 
+    This function ONLY supports Multi-Agent Supervisor endpoints from Lab 5:
+    - Uses DatabricksResponsesLM (Responses API format, not OpenAI format)
+    - Uses ChatAdapter (required for MAS, JSONAdapter not supported)
+
     Args:
-        model_name: The Databricks model endpoint name. If None, uses DEFAULT_ENDPOINT.
+        model_name: The MAS endpoint name from Lab 5. If None, uses DEFAULT_ENDPOINT.
         temperature: Sampling temperature (0.0-1.0).
         max_tokens: Maximum tokens in the response.
-        use_json_adapter: If True, use JSONAdapter for structured output.
-                         Note: JSONAdapter requires OpenAI-compatible endpoints.
-                         For MAS endpoints, use ChatAdapter (default).
-        use_responses_api: If True, use DatabricksResponsesLM for MAS endpoints.
-                          If False, use standard OpenAI-compatible LM.
         track_usage: If True, enable token usage tracking.
 
     Returns:
@@ -246,13 +224,10 @@ def configure_dspy(
         model_name=model_name,
         temperature=temperature,
         max_tokens=max_tokens,
-        use_responses_api=use_responses_api,
     )
 
-    # Configure adapter based on preference
-    # JSONAdapter is more efficient for models supporting response_format
-    # ChatAdapter is the fallback for universal compatibility
-    adapter = dspy.JSONAdapter() if use_json_adapter else dspy.ChatAdapter()
+    # MAS endpoints require ChatAdapter (JSONAdapter is not supported)
+    adapter = dspy.ChatAdapter()
 
     dspy.configure(
         lm=lm,
@@ -262,7 +237,7 @@ def configure_dspy(
 
     print(f"[OK] DSPy configured")
     print(f"    Endpoint: {model_name or DEFAULT_ENDPOINT}")
-    print(f"    Adapter: {'JSONAdapter' if use_json_adapter else 'ChatAdapter'}")
+    print(f"    Adapter: ChatAdapter")
     print(f"    Temperature: {temperature}")
     print(f"    Max tokens: {max_tokens}")
 

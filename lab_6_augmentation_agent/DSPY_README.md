@@ -25,7 +25,7 @@ Ensure your `.env` file contains:
 ```
 DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
 DATABRICKS_TOKEN=your-personal-access-token
-LLM_ENDPOINT_NAME=your-model-serving-endpoint
+MAS_ENDPOINT_NAME=your-mas-endpoint
 ```
 
 ## Databricks Cluster Dependencies
@@ -154,6 +154,212 @@ If DSPy fails to parse structured output, it will retry automatically. For persi
 1. Check that your model endpoint supports `response_format`
 2. Try using `use_json_adapter=False` to fall back to ChatAdapter
 3. Simplify the Pydantic schema if it has deep nesting
+
+## Best Practices for DSPy with Multi-Agent Supervisor
+
+When building DSPy agents that use Databricks Multi-Agent Supervisor (MAS) endpoints for structured output, follow these best practices:
+
+### 1. Use the Custom LM Adapter for MAS
+
+MAS endpoints use the Databricks Responses API format, not OpenAI Chat Completions. Always use the `DatabricksResponsesLM` adapter:
+
+```python
+from lab_6_augmentation_agent.dspy_modules.config import configure_dspy
+
+# This automatically uses DatabricksResponsesLM for MAS endpoints
+lm = configure_dspy(model_name="your-mas-endpoint")
+```
+
+**Do NOT** use `dspy.LM` or `dspy.OpenAI` directly with MAS endpoints—they send the wrong API format.
+
+### 2. Use ChatAdapter, Not JSONAdapter
+
+MAS endpoints require `ChatAdapter` for structured output. JSONAdapter is not supported:
+
+```python
+import dspy
+
+# Correct for MAS
+adapter = dspy.ChatAdapter()
+
+# Wrong - will fail with MAS
+# adapter = dspy.JSONAdapter()
+```
+
+### 3. Define Pydantic Models in a Separate schemas.py
+
+Keep your Pydantic models in a dedicated file for reusability:
+
+```python
+# schemas.py
+from pydantic import BaseModel, Field
+from enum import Enum
+
+class ConfidenceLevel(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class SuggestedNode(BaseModel):
+    label: str = Field(..., description="Node label")
+    description: str = Field(..., description="What this node represents")
+    confidence: ConfidenceLevel = Field(default=ConfidenceLevel.MEDIUM)
+```
+
+**Best practices for Pydantic models:**
+- Use `Field(...)` with descriptions—DSPy uses these in prompt generation
+- Use enums for constrained string values
+- Keep nesting shallow (2-3 levels max) for reliable parsing
+- Use `list[Model]` for collections, not `List[Model]`
+
+### 4. Write Declarative Signatures with Clear Docstrings
+
+The signature docstring becomes part of the prompt. Make it specific:
+
+```python
+# Good - specific and actionable
+class NewEntitiesSignature(dspy.Signature):
+    """
+    Analyze documents to suggest new entity types for the graph database.
+
+    Identify entities that should be extracted and added as new node types,
+    including their properties, key identifiers, and example values.
+    """
+    document_context: str = dspy.InputField(
+        desc="HTML data and documents containing entity information to extract"
+    )
+    analysis: NewEntitiesAnalysis = dspy.OutputField(
+        desc="Structured suggestions for new node types with properties and examples"
+    )
+
+# Bad - vague and generic
+class BadSignature(dspy.Signature):
+    """Analyze stuff."""
+    input: str = dspy.InputField()
+    output: dict = dspy.OutputField()
+```
+
+### 5. Use ChainOfThought for Complex Analysis
+
+`ChainOfThought` encourages step-by-step reasoning before producing structured output:
+
+```python
+class MyAnalyzer(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        # ChainOfThought adds a "reasoning" field to the output
+        self.analyze = dspy.ChainOfThought(MySignature)
+
+    def forward(self, document_context: str):
+        result = self.analyze(document_context=document_context)
+        # Access both the reasoning and structured output
+        print(f"Reasoning: {result.reasoning}")
+        return result.analysis  # Your Pydantic model
+```
+
+### 6. Handle Errors with Result Wrappers
+
+Wrap DSPy results in dataclasses that capture success/failure state:
+
+```python
+from dataclasses import dataclass
+
+@dataclass(slots=True)
+class AnalysisResult:
+    success: bool
+    data: MyAnalysis | None = None
+    error: str | None = None
+    reasoning: str | None = None
+
+class MyAnalyzer(dspy.Module):
+    def forward(self, document_context: str) -> AnalysisResult:
+        try:
+            result = self.analyze(document_context=document_context)
+            return AnalysisResult(
+                success=True,
+                data=result.analysis,
+                reasoning=getattr(result, "reasoning", None),
+            )
+        except Exception as e:
+            return AnalysisResult(success=False, error=str(e))
+```
+
+### 7. Use WorkspaceClient for Authentication
+
+Let `WorkspaceClient()` handle authentication automatically:
+
+```python
+from databricks.sdk import WorkspaceClient
+
+# On Databricks: auto-authenticates via runtime
+# Locally: uses DATABRICKS_HOST and DATABRICKS_TOKEN from .env
+client = WorkspaceClient()
+openai_client = client.serving_endpoints.get_open_ai_client()
+```
+
+**Do NOT** use `dbutils.secrets` for Databricks credentials—they're not needed.
+
+### 8. Enable MLflow Tracing
+
+MLflow tracing captures inputs, outputs, and reasoning for debugging:
+
+```python
+import mlflow
+
+mlflow.dspy.autolog()  # Requires MLflow 3.1+
+```
+
+View traces in the MLflow UI to debug prompt/response issues.
+
+### 9. Keep Configuration Simple
+
+For demos and production code, avoid unnecessary configuration options:
+
+```python
+# Good - simple, MAS-only
+def configure_dspy(model_name: str, temperature: float = 0.1):
+    lm = DatabricksResponsesLM(model=model_name, temperature=temperature)
+    dspy.configure(lm=lm, adapter=dspy.ChatAdapter())
+
+# Bad - too many options that can cause errors
+def configure_dspy(model_name, use_json_adapter=False, use_responses_api=True, ...):
+    if use_json_adapter:  # This will fail with MAS anyway
+        ...
+```
+
+### 10. Test Locally Before Deploying
+
+Use the same code path locally and on Databricks:
+
+```bash
+# Local testing
+uv run python -m lab_6_augmentation_agent.agent_dspy
+
+# Same code runs on Databricks via notebook or IDE plugin
+```
+
+### Summary: MAS + DSPy Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Your DSPy Application                       │
+├─────────────────────────────────────────────────────────────────┤
+│  Pydantic Models (schemas.py)                                   │
+│    └─ Type-safe structured output definitions                   │
+├─────────────────────────────────────────────────────────────────┤
+│  DSPy Signatures (signatures.py)                                │
+│    └─ Declarative input/output specs with Pydantic types        │
+├─────────────────────────────────────────────────────────────────┤
+│  DSPy Modules (analyzers.py)                                    │
+│    └─ ChainOfThought predictors wrapping signatures             │
+├─────────────────────────────────────────────────────────────────┤
+│  DatabricksResponsesLM (config.py)                              │
+│    └─ Custom LM adapter for Responses API format                │
+├─────────────────────────────────────────────────────────────────┤
+│  Multi-Agent Supervisor Endpoint                                │
+│    └─ Routes to Genie + Knowledge Agent (Lab 5)                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ## References
 

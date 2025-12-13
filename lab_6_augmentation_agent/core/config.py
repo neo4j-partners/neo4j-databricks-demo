@@ -5,11 +5,11 @@ This module contains:
     - AnalysisType enum for type-safe analysis types
     - AnalysisConfig dataclass for analysis metadata
     - ANALYSIS_CONFIGS dictionary with all analysis configurations
-    - LLM configuration settings
+    - Retry configuration settings
 
 Documentation References:
-    - Databricks Foundation Models:
-      https://docs.databricks.com/aws/en/machine-learning/model-serving/score-foundation-models
+    - Databricks Multi-Agent Supervisor:
+      https://docs.databricks.com/aws/en/generative-ai/agent-framework/
 
     - Databricks Structured Outputs:
       https://docs.databricks.com/aws/en/machine-learning/model-serving/structured-outputs
@@ -17,7 +17,6 @@ Documentation References:
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -42,21 +41,6 @@ class AnalysisType(StrEnum):
     MISSING_ATTRIBUTES = "missing_attributes"
     IMPLIED_RELATIONSHIPS = "implied_relationships"
 
-
-# Foundation Model configuration
-# Reference: https://docs.databricks.com/aws/en/machine-learning/model-serving/score-foundation-models
-#
-# Supported Claude models (recommended for structured output):
-#   - databricks-claude-sonnet-4-5 (Latest - Claude Sonnet 4.5)
-#   - databricks-claude-opus-4-5 (Claude Opus 4.5)
-#   - databricks-claude-sonnet-4 (Claude Sonnet 4)
-#   - databricks-claude-opus-4-1 (Claude Opus 4.1)
-#   - databricks-claude-3-7-sonnet (Claude 3.7 Sonnet)
-#
-# Other supported models:
-#   - databricks-meta-llama-3-3-70b-instruct (Meta Llama)
-#   - databricks-gpt-4o, databricks-gpt-4o-mini (OpenAI)
-LLM_MODEL = os.environ.get("LLM_MODEL", "databricks-claude-sonnet-4-5")
 
 # Retry configuration for transient failures
 MAX_RETRIES = 2

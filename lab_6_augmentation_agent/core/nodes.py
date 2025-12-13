@@ -19,7 +19,7 @@ from typing import Any, Literal
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from lab_6_augmentation_agent.core.client import get_llm_client
+from lab_6_augmentation_agent.core.client import get_mas_client
 from lab_6_augmentation_agent.core.config import ANALYSIS_CONFIGS, AnalysisType
 from lab_6_augmentation_agent.core.state import AgentState, AnalysisResult
 from lab_6_augmentation_agent.schemas import (
@@ -78,9 +78,9 @@ def select_next_analysis_node(state: AgentState) -> dict[str, Any]:
 
 def run_analysis_node(state: AgentState) -> dict[str, Any]:
     """
-    Execute the current analysis using ChatDatabricks with structured output.
+    Execute the current analysis using MAS endpoint with structured output.
 
-    Queries the LLM and stores the structured result in state.
+    Queries the MAS endpoint and stores the structured result in state.
 
     Reference: https://api-docs.databricks.com/python/databricks-ai-bridge/latest/databricks_langchain.html
     """
@@ -89,7 +89,7 @@ def run_analysis_node(state: AgentState) -> dict[str, Any]:
         return {"error": "No analysis type selected"}
 
     config = ANALYSIS_CONFIGS[current]
-    client = get_llm_client()
+    client = get_mas_client()
 
     # Execute query with structured output
     parsed_result, error, duration = client.query(current, config.query)

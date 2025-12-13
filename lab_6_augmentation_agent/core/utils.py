@@ -18,10 +18,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from lab_6_augmentation_agent.core.client import get_llm_client
+from lab_6_augmentation_agent.core.client import get_mas_client
 from lab_6_augmentation_agent.core.config import (
     ANALYSIS_CONFIGS,
-    LLM_MODEL,
     AnalysisType,
 )
 from lab_6_augmentation_agent.core.state import AnalysisResult
@@ -99,7 +98,7 @@ def run_single_analysis(
         print(f"Running: {config.display_name}")
         print(f"  Query: {config.query[:60]}...")
 
-    client = get_llm_client()
+    client = get_mas_client()
     start_time = time.time()
 
     parsed_result, error, duration = client.query(analysis_type, config.query)
@@ -330,15 +329,18 @@ def get_high_confidence_items(result: AnalysisResult) -> list[dict[str, Any]]:
     ]
 
 
-def get_model_info() -> dict[str, str]:
+def get_endpoint_info() -> dict[str, str]:
     """
-    Get information about the configured LLM model.
+    Get information about the configured Multi-Agent Supervisor endpoint.
 
     Returns:
-        Dict with model name and method
+        Dict with endpoint name and method
     """
+    import os
+    endpoint = os.environ.get("MAS_ENDPOINT_NAME", "Not configured")
     return {
-        "model": LLM_MODEL,
+        "endpoint": endpoint,
+        "mode": "Multi-Agent Supervisor (Lab 5)",
         "method": "ChatDatabricks.with_structured_output()",
         "docs": "https://api-docs.databricks.com/python/databricks-ai-bridge/latest/",
     }

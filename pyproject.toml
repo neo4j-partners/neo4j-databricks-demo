@@ -4,22 +4,30 @@ version = "0.1.0"
 description = "Demo project for Neo4j and Databricks integration"
 requires-python = ">=3.10"
 dependencies = [
-    "databricks-sdk>=0.20.0",
-    "neo4j>=5.0.0",
+    # Databricks SDK - https://pypi.org/project/databricks-sdk/
+    "databricks-sdk>=0.74.0",
+    # Neo4j driver - https://pypi.org/project/neo4j/
+    "neo4j>=6.0.0",
+    # PySpark - https://pypi.org/project/pyspark/ (keeping 3.x for Databricks Runtime compatibility)
     "pyspark>=3.5.0",
-    "python-dotenv>=1.0.0",
-    "langgraph>=0.2.0",
-    "langchain-core>=0.3.0",
-    "langchain-openai>=0.2.0",
-    "pydantic>=2.0.0",
+    # Environment config - https://pypi.org/project/python-dotenv/
+    "python-dotenv>=1.2.0",
+    # LangGraph orchestration - https://pypi.org/project/langgraph/
+    "langgraph>=1.0.0",
+    # LangChain core - https://pypi.org/project/langchain-core/
+    "langchain-core>=1.0.0",
+    # LangChain OpenAI - https://pypi.org/project/langchain-openai/
+    "langchain-openai>=1.0.0",
+    # Pydantic models - https://pypi.org/project/pydantic/
+    "pydantic>=2.10.0",
     # V2 agent: Native structured output with ChatDatabricks
     # Reference: https://api-docs.databricks.com/python/databricks-ai-bridge/latest/databricks_langchain.html
-    "databricks-langchain>=0.1.0",
+    "databricks-langchain>=0.11.0",
     # DSPy agent: Programmatic AI with structured output
     # Reference: https://docs.databricks.com/aws/en/generative-ai/dspy/
-    # PyPI: https://pypi.org/project/dspy/ (v3.0.4 as of Nov 2025)
+    # PyPI: https://pypi.org/project/dspy/ (v3.0.4 as of Dec 2025)
     "dspy>=3.0.4",
     # MLflow for DSPy tracing (optional but recommended)
     # Reference: https://docs.databricks.com/aws/en/mlflow3/genai/tracing/integrations/dspy
-    "mlflow[databricks]>=3.1",
+    "mlflow[databricks]>=3.7",
 ]

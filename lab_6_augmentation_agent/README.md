@@ -96,6 +96,31 @@ The `augmentation_agent_notebook.ipynb` provides interactive exploration with:
 - **Separate cells for each analysis** - See what happens at each step
 - **Detailed result display** - Examine suggestions with evidence and examples
 - **Easy re-runs** - Re-run individual analyses without starting over
+- **Databricks Secrets integration** - Credentials loaded from secrets scope
+
+### Configuration Cell
+
+The notebook has a configuration cell at the top where you set:
+
+```python
+# Multi-Agent Supervisor endpoint (REQUIRED - created in Lab 5)
+# This must be set to the endpoint name from Lab 5's Multi-Agent Supervisor
+MAS_ENDPOINT_NAME = "agents_retail-investment-intelligence-system_agent"
+
+# Secrets scope for credentials
+SECRETS_SCOPE = "neo4j-creds"
+```
+
+### Databricks Secrets
+
+The notebook retrieves credentials from Databricks Secrets. Add these keys to your scope:
+
+| Key | Description | Required |
+|-----|-------------|----------|
+| `databricks_host` | Workspace URL (e.g., `https://xxx.cloud.databricks.com`) | Optional* |
+| `databricks_token` | Personal access token | Optional* |
+
+*If not set, the notebook uses the current notebook context for authentication.
 
 
 ## Architecture
@@ -138,22 +163,7 @@ The `augmentation_agent_notebook.ipynb` provides interactive exploration with:
 |----------|-------------|---------|
 | `DATABRICKS_HOST` | Databricks workspace URL | Required |
 | `DATABRICKS_TOKEN` | Databricks access token | Required |
-| `LLM_MODEL` | Foundation model to use | `databricks-claude-sonnet-4` |
-
-### Supported Models
-
-**Claude (Anthropic)** - Recommended for structured output:
-- `databricks-claude-sonnet-4-5` (Latest - Claude Sonnet 4.5)
-- `databricks-claude-opus-4-5` (Claude Opus 4.5)
-- `databricks-claude-sonnet-4` (Claude Sonnet 4)
-- `databricks-claude-opus-4-1` (Claude Opus 4.1)
-- `databricks-claude-3-7-sonnet` (Claude 3.7 Sonnet)
-
-**Llama (Meta)**:
-- `databricks-meta-llama-3-3-70b-instruct`
-
-**GPT (OpenAI)**:
-- `databricks-gpt-4o`, `databricks-gpt-4o-mini`
+| `MAS_ENDPOINT_NAME` | Lab 5 Multi-Agent Supervisor endpoint | Required |
 
 ---
 

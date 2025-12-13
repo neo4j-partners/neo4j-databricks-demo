@@ -18,15 +18,14 @@ from lab_6_augmentation_agent.core.config import (
     AnalysisType,
     AnalysisConfig,
     ANALYSIS_CONFIGS,
-    LLM_MODEL,
 )
 from lab_6_augmentation_agent.core.state import (
     AnalysisResult,
     AgentState,
 )
 from lab_6_augmentation_agent.core.client import (
-    StructuredLLMClient,
-    get_llm_client,
+    MASClient,
+    get_mas_client,
 )
 from lab_6_augmentation_agent.core.graph import (
     GraphAugmentationAgent,
@@ -44,7 +43,7 @@ from lab_6_augmentation_agent.core.utils import (
     format_analysis_result,
     display_suggestions,
     get_high_confidence_items,
-    get_model_info,
+    get_endpoint_info,
 )
 
 __all__ = [
@@ -52,13 +51,12 @@ __all__ = [
     "AnalysisType",
     "AnalysisConfig",
     "ANALYSIS_CONFIGS",
-    "LLM_MODEL",
     # State
     "AnalysisResult",
     "AgentState",
     # Client
-    "StructuredLLMClient",
-    "get_llm_client",
+    "MASClient",
+    "get_mas_client",
     # Graph
     "GraphAugmentationAgent",
     "build_augmentation_graph",
@@ -73,5 +71,5 @@ __all__ = [
     "format_analysis_result",
     "display_suggestions",
     "get_high_confidence_items",
-    "get_model_info",
+    "get_endpoint_info",
 ]

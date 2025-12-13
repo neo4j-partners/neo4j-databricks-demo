@@ -24,11 +24,11 @@ Documentation References:
       https://langchain-ai.github.io/langgraph/concepts/persistence/
 
 Usage:
-    # CLI application
+    # CLI application (uses .env file for local development)
     uv run python -m lab_6_augmentation_agent.augmentation_agent
     uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.json
 
-    # Jupyter notebook
+    # On Databricks (uses dbutils.secrets)
     See augmentation_agent_notebook.ipynb for interactive exploration
 
 Module Structure:
@@ -47,17 +47,165 @@ Module Structure:
 
 from __future__ import annotations
 
+import os
 import time
+from pathlib import Path
+
+# =============================================================================
+# CONFIGURATION - Edit these values before running
+# =============================================================================
+
+# Multi-Agent Supervisor endpoint (REQUIRED - created in Lab 5)
+# This must be set to the endpoint name from Lab 5's Multi-Agent Supervisor
+# Example: "agents_retail-investment-intelligence-system_agent"
+MAS_ENDPOINT_NAME = "mas-3ae5a347-endpoint"
+
+# Databricks Secrets scope for credentials (used when running on Databricks)
+# For local development, credentials are loaded from .env file
+SECRETS_SCOPE = "neo4j-creds"
+
+# =============================================================================
+# ENVIRONMENT SETUP
+# =============================================================================
+
+
+def setup_databricks_environment() -> dict[str, str | None]:
+    """
+    Configure environment for Databricks authentication.
+
+    Attempts to load credentials in this order:
+    1. Databricks Secrets (when running on Databricks)
+    2. .env file (for local development)
+
+    Returns:
+        Dict with configuration status
+    """
+    print("=" * 70)
+    print("ENVIRONMENT SETUP")
+    print("=" * 70)
+    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("")
+
+    databricks_host = None
+    databricks_token = None
+    auth_method = "unknown"
+
+    # Try Databricks Secrets first (when running on Databricks)
+    print(f"[DEBUG] Checking for Databricks Secrets (scope: {SECRETS_SCOPE})...")
+    try:
+        # This will only work on Databricks
+        import IPython
+        ipython = IPython.get_ipython()
+        if ipython and hasattr(ipython, 'user_ns') and 'dbutils' in ipython.user_ns:
+            dbutils = ipython.user_ns['dbutils']
+            try:
+                databricks_host = dbutils.secrets.get(scope=SECRETS_SCOPE, key="databricks_host")
+                print(f"  [OK] databricks_host: {databricks_host[:30]}...")
+            except Exception:
+                print("  [SKIP] databricks_host not in secrets")
+
+            try:
+                databricks_token = dbutils.secrets.get(scope=SECRETS_SCOPE, key="databricks_token")
+                print(f"  [OK] databricks_token: {'*' * 10}... ({len(databricks_token)} chars)")
+                auth_method = "Databricks Secrets"
+            except Exception:
+                print("  [SKIP] databricks_token not in secrets")
+        else:
+            print("  [SKIP] Not running on Databricks, skipping secrets")
+    except ImportError:
+        print("  [SKIP] IPython not available, skipping secrets")
+    except Exception as e:
+        print(f"  [SKIP] Secrets not available: {type(e).__name__}")
+
+    # Fall back to .env file for local development
+    if not databricks_token:
+        print("")
+        print("[DEBUG] Loading from .env file...")
+        try:
+            from dotenv import load_dotenv
+
+            project_root = Path(__file__).parent.parent
+            env_path = project_root / ".env"
+
+            if env_path.exists():
+                load_dotenv(env_path, override=True)
+                print(f"  [OK] Loaded: {env_path}")
+
+                databricks_host = os.environ.get("DATABRICKS_HOST")
+                databricks_token = os.environ.get("DATABRICKS_TOKEN")
+
+                if databricks_host:
+                    print(f"  [OK] DATABRICKS_HOST: {databricks_host[:30]}...")
+                if databricks_token:
+                    print(f"  [OK] DATABRICKS_TOKEN: {'*' * 10}... ({len(databricks_token)} chars)")
+                    auth_method = ".env file"
+            else:
+                print(f"  [WARN] .env file not found at {env_path}")
+        except ImportError:
+            print("  [WARN] python-dotenv not installed, skipping .env")
+
+    # Set environment variables
+    if databricks_host:
+        os.environ["DATABRICKS_HOST"] = databricks_host
+    if databricks_token:
+        os.environ["DATABRICKS_TOKEN"] = databricks_token
+
+    # Validate and set the Multi-Agent Supervisor endpoint (REQUIRED)
+    if not MAS_ENDPOINT_NAME:
+        print("")
+        print("=" * 70)
+        print("[FATAL] MAS_ENDPOINT_NAME is not configured!")
+        print("=" * 70)
+        print("  The Lab 6 Augmentation Agent requires the Lab 5 Multi-Agent")
+        print("  Supervisor endpoint. Please set MAS_ENDPOINT_NAME in the")
+        print("  configuration section at the top of this file.")
+        print("")
+        print("  Example:")
+        print('    MAS_ENDPOINT_NAME = "agents_retail-investment-intelligence-system_agent"')
+        print("=" * 70)
+        raise SystemExit("MAS_ENDPOINT_NAME is required but not set")
+
+    os.environ["MAS_ENDPOINT_NAME"] = MAS_ENDPOINT_NAME
+
+    # Clear conflicting auth methods
+    for var in [
+        "DATABRICKS_CONFIG_PROFILE",
+        "DATABRICKS_CLIENT_ID",
+        "DATABRICKS_CLIENT_SECRET",
+        "DATABRICKS_ACCOUNT_ID",
+    ]:
+        os.environ.pop(var, None)
+
+    print("")
+    print("=" * 70)
+    print("CONFIGURATION SUMMARY")
+    print("=" * 70)
+    print(f"  Databricks Host: {databricks_host[:40] if databricks_host else 'Not set'}...")
+    print(f"  Auth Method:     {auth_method}")
+    print(f"  Mode:            Multi-Agent Supervisor (Lab 5)")
+    print(f"  Endpoint:        {MAS_ENDPOINT_NAME}")
+    print("=" * 70)
+
+    return {
+        "DATABRICKS_HOST": databricks_host,
+        "DATABRICKS_TOKEN": "***" if databricks_token else None,
+        "MAS_ENDPOINT_NAME": MAS_ENDPOINT_NAME,
+        "auth_method": auth_method,
+    }
+
+
+# =============================================================================
+# IMPORTS FROM CORE MODULES
+# =============================================================================
 
 from lab_6_augmentation_agent.core import (
     AnalysisType,
     GraphAugmentationAgent,
-    get_model_info,
+    get_endpoint_info,
     print_analysis_result,
     print_header,
     print_section,
     print_summary,
-    setup_environment,
 )
 
 # Re-export for convenience
@@ -85,16 +233,17 @@ def main(export_path: str | None = None) -> tuple[GraphAugmentationAgent, dict]:
     Returns:
         Tuple of (agent, final_state)
     """
-    # Setup environment (loads .env and configures auth)
-    setup_environment()
+    # Setup environment (loads secrets or .env and configures auth)
+    setup_databricks_environment()
 
-    # Get model info
-    model_info = get_model_info()
+    # Get endpoint info
+    endpoint_info = get_endpoint_info()
 
     print_header("GRAPH AUGMENTATION AGENT")
-    print(f"\n  Model:  {model_info['model']}")
-    print(f"  Method: {model_info['method']}")
-    print(f"  Docs:   {model_info['docs']}")
+    print(f"\n  Endpoint: {endpoint_info['endpoint']}")
+    print(f"  Mode:     {endpoint_info['mode']}")
+    print(f"  Method:   {endpoint_info['method']}")
+    print(f"  Docs:     {endpoint_info['docs']}")
 
     # Initialize agent
     agent = GraphAugmentationAgent()
@@ -147,6 +296,11 @@ if __name__ == "__main__":
 Examples:
   uv run python -m lab_6_augmentation_agent.augmentation_agent
   uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.json
+
+Configuration:
+  Edit the CONFIGURATION section at the top of this file to change:
+  - MAS_ENDPOINT_NAME: Lab 5 Multi-Agent Supervisor endpoint (required)
+  - SECRETS_SCOPE: Databricks secrets scope
 
 Interactive:
   See augmentation_agent_notebook.ipynb for step-by-step exploration
