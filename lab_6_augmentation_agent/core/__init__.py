@@ -1,5 +1,17 @@
 """
-Core modules for the Graph Augmentation Agent.
+DEPRECATED: This LangGraph implementation does not work with MAS endpoints.
+
+ChatDatabricks.with_structured_output() is incompatible with Multi-Agent Supervisor (MAS)
+endpoints. All three methods (function_calling, json_schema, json_mode) fail.
+
+Use the DSPy implementation instead:
+    uv run python -m lab_6_augmentation_agent.agent_dspy
+
+See WHY_NOT_LANGGRAPH.md for full technical details.
+
+---
+
+Core modules for the Graph Augmentation Agent (DEPRECATED).
 
 This package contains the modular components for the LangGraph-based
 graph augmentation agent with native Pydantic structured output.

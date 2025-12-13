@@ -10,13 +10,9 @@ uv sync
 
 # Run all analyses
 uv run python -m lab_6_augmentation_agent.agent_dspy
-
-# Run a specific analysis
-uv run python -m lab_6_augmentation_agent.agent_dspy --analysis investment_themes
-uv run python -m lab_6_augmentation_agent.agent_dspy --analysis new_entities
-uv run python -m lab_6_augmentation_agent.agent_dspy --analysis missing_attributes
-uv run python -m lab_6_augmentation_agent.agent_dspy --analysis implied_relationships
 ```
+
+On Databricks, use the `augmentation_dspy_agent.ipynb` notebook which runs each analysis in separate cells.
 
 ## Environment Setup
 
@@ -116,7 +112,7 @@ client.chat.completions.create(
 )
 ```
 
-The adapter handles this conversion automatically. Use `use_responses_api=True` (default) for MAS endpoints.
+The `DatabricksResponsesLM` adapter handles this conversion automatically. This implementation only supports MAS endpoints.
 
 ## Comparison with Original Agent
 
@@ -151,9 +147,10 @@ Run `uv sync` to install dependencies.
 
 If DSPy fails to parse structured output, it will retry automatically. For persistent issues:
 
-1. Check that your model endpoint supports `response_format`
-2. Try using `use_json_adapter=False` to fall back to ChatAdapter
-3. Simplify the Pydantic schema if it has deep nesting
+1. Simplify the Pydantic schema (reduce nesting depth to 2-3 levels)
+2. Add clearer `Field(description=...)` hints for complex fields
+3. Check MLflow traces to see what the model is actually returning
+4. Ensure your MAS endpoint is responding correctly (test with a simple query first)
 
 ## Best Practices for DSPy with Multi-Agent Supervisor
 

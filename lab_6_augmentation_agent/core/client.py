@@ -1,5 +1,20 @@
 """
-Multi-Agent Supervisor (MAS) client with Pydantic structured output.
+DEPRECATED: This client does not work with MAS endpoints.
+
+ChatDatabricks.with_structured_output() is incompatible with Multi-Agent Supervisor (MAS)
+endpoints. All three methods (function_calling, json_schema, json_mode) fail because:
+- function_calling: MAS doesn't support OpenAI tools format
+- json_schema: MAS doesn't accept response_format parameter
+- json_mode: MAS doesn't accept response_format parameter
+
+Use the DSPy implementation instead:
+    uv run python -m lab_6_augmentation_agent.agent_dspy
+
+See WHY_NOT_LANGGRAPH.md for full technical details.
+
+---
+
+Multi-Agent Supervisor (MAS) client with Pydantic structured output (DEPRECATED).
 
 This module provides the MASClient class for querying the Lab 5
 Multi-Agent Supervisor endpoint using ChatDatabricks with native

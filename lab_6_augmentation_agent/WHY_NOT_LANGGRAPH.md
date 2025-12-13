@@ -106,7 +106,7 @@ structured_client = chat.with_structured_output(
 Error: Invalid properties not defined in the schema found: {'function'}
 ```
 
-The `input` format is correct, but `tools` format is incompatible.
+The `input` format is correct, but `tools` format is incompatible with MAS.
 
 ### Attempt 2: `use_responses_api=True` + `method="json_schema"`
 
@@ -117,7 +117,28 @@ structured_client = chat.with_structured_output(
 )
 ```
 
-**Result:** 🔄 Testing in progress
+**Result:** ❌ Failed
+```
+Error: Responses.create() got an unexpected keyword argument 'response_format'
+```
+
+The Responses API doesn't accept `response_format` parameter.
+
+### Attempt 3: `use_responses_api=True` + `method="json_mode"`
+
+```python
+structured_client = chat.with_structured_output(
+    config.schema,
+    method="json_mode",
+)
+```
+
+**Result:** ❌ Failed
+```
+Error: Responses.create() got an unexpected keyword argument 'response_format'
+```
+
+Same issue - all methods rely on `response_format` which MAS doesn't support.
 
 ---
 
@@ -180,15 +201,61 @@ Create a custom `BaseChatModel` that:
 | Component | Status |
 |-----------|--------|
 | `use_responses_api=True` | ✅ Working - converts to `input` format |
-| `method="function_calling"` | ❌ Failed - MAS doesn't support OpenAI tools |
-| `method="json_schema"` | 🔄 Testing |
-| `method="json_mode"` | ❓ Not tested |
+| `method="function_calling"` | ❌ Failed - MAS doesn't support OpenAI tools format |
+| `method="json_schema"` | ❌ Failed - MAS doesn't support `response_format` |
+| `method="json_mode"` | ❌ Failed - MAS doesn't support `response_format` |
 | Direct Responses API | ✅ Works (see DSPy implementation) |
+
+---
+
+## Conclusion
+
+**`ChatDatabricks.with_structured_output()` is NOT compatible with MAS endpoints.**
+
+All three methods (`function_calling`, `json_schema`, `json_mode`) fail because:
+1. `function_calling` requires OpenAI tools format which MAS doesn't support
+2. `json_schema` and `json_mode` require `response_format` which MAS doesn't accept
+
+**Recommended Solution: Direct Responses API + Prompt Engineering + Pydantic Validation**
+
+```python
+from databricks.sdk import WorkspaceClient
+from pydantic import BaseModel
+
+# 1. Get client
+client = WorkspaceClient().serving_endpoints.get_open_ai_client()
+
+# 2. Include JSON schema in prompt
+prompt = f"""
+{system_prompt}
+
+{user_query}
+
+Respond with valid JSON matching this schema:
+{schema.model_json_schema()}
+"""
+
+# 3. Call MAS endpoint
+response = client.responses.create(
+    model=endpoint,
+    input=[{"role": "user", "content": prompt}],
+)
+
+# 4. Parse and validate with Pydantic
+text = response.output[0].content[0].text
+data = json.loads(text)
+result = MySchema.model_validate(data)
+```
+
+This approach:
+- ✅ Works with MAS endpoints
+- ✅ Uses Pydantic for type safety
+- ✅ Leverages the model's JSON generation capability
+- ⚠️ Requires robust JSON extraction from potentially markdown-wrapped responses
 
 ## Next Steps
 
-1. Test `method="json_schema"` with MAS endpoint
-2. If that fails, test `method="json_mode"`
-3. If both fail, implement Option A (Direct Responses API + manual parsing)
-4. Update client.py with working solution
-5. Remove all LLM naming, use MAS consistently
+1. Implement Option A in `client.py` (Direct Responses API + manual parsing)
+2. Add robust JSON extraction (handle ```json blocks, etc.)
+3. Update all LLM references to MAS
+4. Test with all four analysis types

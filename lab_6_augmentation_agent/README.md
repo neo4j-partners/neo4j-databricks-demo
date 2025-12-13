@@ -1,77 +1,93 @@
 # Lab 6: Graph Augmentation Agent
 
-This lab uses LangGraph and ChatDatabricks to analyze unstructured documents and suggest graph augmentations for Neo4j with **native Pydantic structured output**.
-
-## Key Features
-
-- **Native Structured Output** - Uses `ChatDatabricks.with_structured_output()` for validated Pydantic models
-- **LangGraph Workflow** - StateGraph orchestration with memory persistence
-- **Modular Architecture** - Clean separation of concerns in `core/` module
-- **Interactive Notebook** - Step-by-step exploration with separate cells per analysis
-- **Multiple Implementations** - LangGraph (primary) and DSPy (experimental)
+> **Important:** The LangGraph/LangChain implementation does not work with Multi-Agent Supervisor (MAS) endpoints.
+>
+> `ChatDatabricks.with_structured_output()` is incompatible with MAS endpoints because:
+> - `function_calling` method: MAS doesn't support OpenAI tools format
+> - `json_schema` method: MAS doesn't accept `response_format` parameter
+> - `json_mode` method: MAS doesn't accept `response_format` parameter
+>
+> Custom JSON parsing is problematic and error-prone. **Use the DSPy implementation instead.**
+>
+> See [WHY_NOT_LANGGRAPH.md](./WHY_NOT_LANGGRAPH.md) for full technical details on the incompatibility.
 
 ---
 
-## Prerequisites
+## Recommended: DSPy Implementation
 
-1. Databricks workspace with Foundation Model APIs enabled
-2. `.env` file with `DATABRICKS_HOST` and `DATABRICKS_TOKEN`
-3. Python dependencies installed via `uv sync`
+The DSPy implementation works reliably with MAS endpoints using a custom `DatabricksResponsesLM` adapter.
+
+### Quick Start
+
+```bash
+# Sync dependencies (includes dspy>=3.0.4)
+uv sync
+
+# Run all analyses
+uv run python -m lab_6_augmentation_agent.agent_dspy
+```
+
+On Databricks, use the `augmentation_dspy_agent.ipynb` notebook.
+
+### Why DSPy?
+
+| Feature | LangGraph (Broken) | DSPy (Working) |
+|---------|-------------------|----------------|
+| MAS endpoint support | No | Yes |
+| Structured output | Fails | Native via signatures |
+| Pydantic validation | Fails | Built-in |
+| Custom JSON parsing | Required (fragile) | Not needed |
+
+See [DSPY_README.md](./DSPY_README.md) for full DSPy documentation and best practices.
+
+---
+
+## Environment Setup
+
+Ensure your `.env` file contains:
+
+```
+DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
+DATABRICKS_TOKEN=your-personal-access-token
+MAS_ENDPOINT_NAME=your-mas-endpoint
+```
 
 ### Databricks Cluster Libraries
 
 Install these libraries on your Databricks cluster:
 
-| Library | Version | PyPI |
-|---------|---------|------|
-| `databricks-langchain` | >= 0.11.0 | [pypi.org/project/databricks-langchain](https://pypi.org/project/databricks-langchain/) |
-| `langgraph` | >= 1.0.5 | [pypi.org/project/langgraph](https://pypi.org/project/langgraph/) |
-| `langchain-core` | >= 1.2.0 | [pypi.org/project/langchain-core](https://pypi.org/project/langchain-core/) |
-| `pydantic` | >= 2.12.5 | [pypi.org/project/pydantic](https://pypi.org/project/pydantic/) |
+| Library | Version | Purpose |
+|---------|---------|---------|
+| `dspy` | `>=3.0.4` | DSPy framework |
+| `mlflow[databricks]` | `>=3.1` | Tracing |
+| `pydantic` | `>=2.0.0` | Structured output schemas |
+| `python-dotenv` | `>=1.0.0` | Environment configuration |
 
 Install via cluster UI or `%pip`:
 ```python
-%pip install databricks-langchain>=0.11.0 langgraph>=1.0.5 langchain-core>=1.2.0 pydantic>=2.12.5
+%pip install dspy>=3.0.4 mlflow[databricks]>=3.1 pydantic>=2.0.0 python-dotenv>=1.0.0
+dbutils.library.restartPython()
 ```
 
 ---
 
-## Quick Start
-
-```bash
-# Run the CLI agent (all analyses at once)
-uv run python -m lab_6_augmentation_agent.augmentation_agent
-
-# Export results to JSON
-uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.json
-
-# Interactive exploration (Jupyter notebook)
-jupyter notebook lab_6_augmentation_agent/augmentation_agent_notebook.ipynb
-```
-
----
-
-## Module Structure
+## Project Structure
 
 ```
 lab_6_augmentation_agent/
-├── augmentation_agent.py           # CLI entry point
-├── augmentation_agent_notebook.ipynb # Interactive notebook
-├── schemas.py                      # Pydantic schemas for structured output
-├── core/                           # Modular LangGraph components
-│   ├── __init__.py                # Package exports
-│   ├── config.py                  # Configuration, AnalysisType enum
-│   ├── state.py                   # LangGraph state schema
-│   ├── client.py                  # ChatDatabricks structured output client
-│   ├── nodes.py                   # LangGraph node functions
-│   ├── graph.py                   # Graph construction & agent class
-│   ├── output.py                  # Demo output formatting
-│   └── utils.py                   # Reusable utilities for CLI/notebooks
-├── dspy_modules/                  # DSPy implementation (experimental)
-│   ├── config.py
-│   ├── signatures.py
-│   └── analyzers.py
-└── agent_dspy.py                  # DSPy entry point
+├── agent_dspy.py                # DSPy entry point (RECOMMENDED)
+├── augmentation_dspy_agent.ipynb # DSPy notebook for Databricks
+├── schemas.py                   # Pydantic schemas for structured output
+├── dspy_modules/                # DSPy implementation
+│   ├── config.py               # DSPy + Databricks LM configuration
+│   ├── signatures.py           # DSPy signatures for each analysis
+│   └── analyzers.py            # DSPy modules that perform analysis
+├── DSPY_README.md              # DSPy documentation
+├── WHY_NOT_LANGGRAPH.md                # LangGraph incompatibility docs
+│
+├── [DEPRECATED] augmentation_agent.py      # LangGraph CLI (does not work)
+├── [DEPRECATED] augmentation_agent*.ipynb  # LangGraph notebooks (do not work)
+└── [DEPRECATED] core/                      # LangGraph components (do not work)
 ```
 
 ---
@@ -89,97 +105,32 @@ The agent performs four types of analysis:
 
 ---
 
-## Notebook Usage
-
-The `augmentation_agent_notebook.ipynb` provides interactive exploration with:
-
-- **Separate cells for each analysis** - See what happens at each step
-- **Detailed result display** - Examine suggestions with evidence and examples
-- **Easy re-runs** - Re-run individual analyses without starting over
-- **Databricks Secrets integration** - Credentials loaded from secrets scope
-
-### Configuration Cell
-
-The notebook has a configuration cell at the top where you set:
+## Usage Example (DSPy)
 
 ```python
-# Multi-Agent Supervisor endpoint (REQUIRED - created in Lab 5)
-# This must be set to the endpoint name from Lab 5's Multi-Agent Supervisor
-MAS_ENDPOINT_NAME = "agents_retail-investment-intelligence-system_agent"
+from lab_6_augmentation_agent.agent_dspy import run_all_analyses
 
-# Secrets scope for credentials
-SECRETS_SCOPE = "neo4j-creds"
+# Run all four analyses
+results = run_all_analyses()
+
+# Access results
+for result in results:
+    if result.success:
+        print(f"{result.analysis_type}: {result.item_count} items")
 ```
-
-### Databricks Secrets
-
-The notebook retrieves credentials from Databricks Secrets. Add these keys to your scope:
-
-| Key | Description | Required |
-|-----|-------------|----------|
-| `databricks_host` | Workspace URL (e.g., `https://xxx.cloud.databricks.com`) | Optional* |
-| `databricks_token` | Personal access token | Optional* |
-
-*If not set, the notebook uses the current notebook context for authentication.
-
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Graph Augmentation Agent                      │
-│                      (LangGraph Workflow)                        │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    ChatDatabricks                                │
-│              with_structured_output()                            │
-│                                                                  │
-│   ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
-│   │  Pydantic   │  │  Function   │  │   Foundation Model      │ │
-│   │   Schema    │──│  Calling    │──│   (Claude/GPT/Llama)    │ │
-│   └─────────────┘  └─────────────┘  └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 Structured Output (Pydantic)                     │
-│                                                                  │
-│   • SuggestedNode        - New node types for graph             │
-│   • SuggestedRelationship - New relationship types              │
-│   • SuggestedAttribute   - New properties for existing nodes    │
-│   • InvestmentTheme      - Market trends and themes             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABRICKS_HOST` | Databricks workspace URL | Required |
-| `DATABRICKS_TOKEN` | Databricks access token | Required |
-| `MAS_ENDPOINT_NAME` | Lab 5 Multi-Agent Supervisor endpoint | Required |
 
 ---
 
 ## Documentation References
 
-- [ChatDatabricks API](https://api-docs.databricks.com/python/databricks-ai-bridge/latest/databricks_langchain.html)
-- [Databricks Structured Outputs](https://docs.databricks.com/aws/en/machine-learning/model-serving/structured-outputs)
-- [LangGraph StateGraph](https://langchain-ai.github.io/langgraph/concepts/low_level/)
-- [LangGraph Checkpointing](https://langchain-ai.github.io/langgraph/concepts/persistence/)
+- [DSPy on Databricks](https://docs.databricks.com/aws/en/generative-ai/dspy/)
+- [DSPy Signatures](https://dspy.ai/learn/programming/signatures/)
+- [Databricks Multi-Agent Supervisor](https://docs.databricks.com/aws/en/generative-ai/agent-bricks/multi-agent-supervisor)
 
 ---
 
-## Next Steps
+## Deprecated: LangGraph Implementation
 
-After identifying augmentation opportunities:
+The `core/` directory and `augmentation_agent.py` contain a LangGraph implementation that **does not work** with MAS endpoints. These files are preserved for reference but should not be used.
 
-1. **Update Neo4j schema** - Add new node labels and relationship types
-2. **Extract new entities** - Parse documents to create new nodes
-3. **Write back to Neo4j** - Use the structured output for graph updates (Phase 4-6 in proposal)
+See [WHY_NOT_LANGGRAPH.md](./WHY_NOT_LANGGRAPH.md) for technical details on why the LangGraph approach failed.
