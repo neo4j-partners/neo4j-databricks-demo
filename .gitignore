@@ -120,3 +120,4 @@ $RECYCLE.BIN/
 .env.production
 
 .databricks
+databricks.yml
