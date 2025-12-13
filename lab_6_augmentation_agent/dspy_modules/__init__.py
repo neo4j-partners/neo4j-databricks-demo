@@ -11,6 +11,7 @@ from lab_6_augmentation_agent.dspy_modules.config import (
     configure_dspy,
     get_lm,
     setup_mlflow_tracing,
+    DatabricksResponsesLM,
 )
 from lab_6_augmentation_agent.dspy_modules.signatures import (
     InvestmentThemesSignature,
@@ -20,8 +21,10 @@ from lab_6_augmentation_agent.dspy_modules.signatures import (
     ANALYSIS_SIGNATURES,
 )
 from lab_6_augmentation_agent.dspy_modules.analyzers import (
-    AnalysisResult,
-    AnalysisData,
+    InvestmentThemesResult,
+    NewEntitiesResult,
+    MissingAttributesResult,
+    ImpliedRelationshipsResult,
     InvestmentThemesAnalyzer,
     NewEntitiesAnalyzer,
     MissingAttributesAnalyzer,
@@ -34,15 +37,19 @@ __all__ = [
     "configure_dspy",
     "get_lm",
     "setup_mlflow_tracing",
+    "DatabricksResponsesLM",
     # Signatures
     "InvestmentThemesSignature",
     "NewEntitiesSignature",
     "MissingAttributesSignature",
     "ImpliedRelationshipsSignature",
     "ANALYSIS_SIGNATURES",
+    # Result types
+    "InvestmentThemesResult",
+    "NewEntitiesResult",
+    "MissingAttributesResult",
+    "ImpliedRelationshipsResult",
     # Analyzers
-    "AnalysisResult",
-    "AnalysisData",
     "InvestmentThemesAnalyzer",
     "NewEntitiesAnalyzer",
     "MissingAttributesAnalyzer",

@@ -121,3 +121,6 @@ $RECYCLE.BIN/
 
 .databricks
 databricks.yml
+
+# Agent output
+results.json

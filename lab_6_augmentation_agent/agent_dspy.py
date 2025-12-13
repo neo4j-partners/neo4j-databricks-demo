@@ -41,8 +41,14 @@ from lab_6_augmentation_agent.dspy_modules.config import (
 )
 from lab_6_augmentation_agent.dspy_modules.analyzers import (
     GraphAugmentationAnalyzer,
-    AnalysisResult,
+    InvestmentThemesResult,
+    NewEntitiesResult,
+    MissingAttributesResult,
+    ImpliedRelationshipsResult,
 )
+
+# Union of all result types for type hints
+AnalysisResult = InvestmentThemesResult | NewEntitiesResult | MissingAttributesResult | ImpliedRelationshipsResult
 
 
 # Analysis types available (immutable tuple for type safety)

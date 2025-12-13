@@ -19,8 +19,7 @@ References:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Final
+from dataclasses import dataclass
 
 import dspy
 
@@ -42,22 +41,40 @@ from lab_6_augmentation_agent.dspy_modules.signatures import (
     ImpliedRelationshipsSignature,
 )
 
-# Type alias for all possible analysis data types
-AnalysisData = (
-    InvestmentThemesAnalysis
-    | NewEntitiesAnalysis
-    | MissingAttributesAnalysis
-    | ImpliedRelationshipsAnalysis
-)
+
+# Specific result types for each analyzer - no generics needed
+@dataclass(slots=True)
+class InvestmentThemesResult:
+    """Result from investment themes analysis."""
+    success: bool
+    data: InvestmentThemesAnalysis | None = None
+    error: str | None = None
+    reasoning: str | None = None
 
 
 @dataclass(slots=True)
-class AnalysisResult:
-    """Result from a single analysis operation."""
-
-    analysis_type: str
+class NewEntitiesResult:
+    """Result from new entities analysis."""
     success: bool
-    data: AnalysisData | None = None
+    data: NewEntitiesAnalysis | None = None
+    error: str | None = None
+    reasoning: str | None = None
+
+
+@dataclass(slots=True)
+class MissingAttributesResult:
+    """Result from missing attributes analysis."""
+    success: bool
+    data: MissingAttributesAnalysis | None = None
+    error: str | None = None
+    reasoning: str | None = None
+
+
+@dataclass(slots=True)
+class ImpliedRelationshipsResult:
+    """Result from implied relationships analysis."""
+    success: bool
+    data: ImpliedRelationshipsAnalysis | None = None
     error: str | None = None
     reasoning: str | None = None
 
@@ -74,7 +91,7 @@ class InvestmentThemesAnalyzer(dspy.Module):
         super().__init__()
         self.analyze = dspy.ChainOfThought(InvestmentThemesSignature)
 
-    def forward(self, document_context: str) -> AnalysisResult:
+    def forward(self, document_context: str) -> InvestmentThemesResult:
         """
         Analyze documents for investment themes.
 
@@ -82,19 +99,17 @@ class InvestmentThemesAnalyzer(dspy.Module):
             document_context: The market research content to analyze.
 
         Returns:
-            AnalysisResult with InvestmentThemesAnalysis data.
+            InvestmentThemesResult with typed data.
         """
         try:
             result = self.analyze(document_context=document_context)
-            return AnalysisResult(
-                analysis_type="investment_themes",
+            return InvestmentThemesResult(
                 success=True,
                 data=result.analysis,
                 reasoning=getattr(result, "reasoning", None),
             )
         except Exception as e:
-            return AnalysisResult(
-                analysis_type="investment_themes",
+            return InvestmentThemesResult(
                 success=False,
                 error=str(e),
             )
@@ -112,7 +127,7 @@ class NewEntitiesAnalyzer(dspy.Module):
         super().__init__()
         self.analyze = dspy.ChainOfThought(NewEntitiesSignature)
 
-    def forward(self, document_context: str) -> AnalysisResult:
+    def forward(self, document_context: str) -> NewEntitiesResult:
         """
         Analyze documents for new entity suggestions.
 
@@ -120,19 +135,17 @@ class NewEntitiesAnalyzer(dspy.Module):
             document_context: The HTML/document content to analyze.
 
         Returns:
-            AnalysisResult with NewEntitiesAnalysis data.
+            NewEntitiesResult with typed data.
         """
         try:
             result = self.analyze(document_context=document_context)
-            return AnalysisResult(
-                analysis_type="new_entities",
+            return NewEntitiesResult(
                 success=True,
                 data=result.analysis,
                 reasoning=getattr(result, "reasoning", None),
             )
         except Exception as e:
-            return AnalysisResult(
-                analysis_type="new_entities",
+            return NewEntitiesResult(
                 success=False,
                 error=str(e),
             )
@@ -150,7 +163,7 @@ class MissingAttributesAnalyzer(dspy.Module):
         super().__init__()
         self.analyze = dspy.ChainOfThought(MissingAttributesSignature)
 
-    def forward(self, document_context: str) -> AnalysisResult:
+    def forward(self, document_context: str) -> MissingAttributesResult:
         """
         Analyze documents for missing attribute suggestions.
 
@@ -158,19 +171,17 @@ class MissingAttributesAnalyzer(dspy.Module):
             document_context: Customer profile content to analyze.
 
         Returns:
-            AnalysisResult with MissingAttributesAnalysis data.
+            MissingAttributesResult with typed data.
         """
         try:
             result = self.analyze(document_context=document_context)
-            return AnalysisResult(
-                analysis_type="missing_attributes",
+            return MissingAttributesResult(
                 success=True,
                 data=result.analysis,
                 reasoning=getattr(result, "reasoning", None),
             )
         except Exception as e:
-            return AnalysisResult(
-                analysis_type="missing_attributes",
+            return MissingAttributesResult(
                 success=False,
                 error=str(e),
             )
@@ -188,7 +199,7 @@ class ImpliedRelationshipsAnalyzer(dspy.Module):
         super().__init__()
         self.analyze = dspy.ChainOfThought(ImpliedRelationshipsSignature)
 
-    def forward(self, document_context: str) -> AnalysisResult:
+    def forward(self, document_context: str) -> ImpliedRelationshipsResult:
         """
         Analyze documents for implied relationship suggestions.
 
@@ -196,19 +207,17 @@ class ImpliedRelationshipsAnalyzer(dspy.Module):
             document_context: Document content to analyze.
 
         Returns:
-            AnalysisResult with ImpliedRelationshipsAnalysis data.
+            ImpliedRelationshipsResult with typed data.
         """
         try:
             result = self.analyze(document_context=document_context)
-            return AnalysisResult(
-                analysis_type="implied_relationships",
+            return ImpliedRelationshipsResult(
                 success=True,
                 data=result.analysis,
                 reasoning=getattr(result, "reasoning", None),
             )
         except Exception as e:
-            return AnalysisResult(
-                analysis_type="implied_relationships",
+            return ImpliedRelationshipsResult(
                 success=False,
                 error=str(e),
             )
@@ -246,15 +255,14 @@ class GraphAugmentationAnalyzer(dspy.Module):
         Returns:
             AugmentationResponse with all analysis results consolidated.
         """
-        all_analyses = [
+        all_analyses = (
             "investment_themes",
             "new_entities",
             "missing_attributes",
             "implied_relationships",
-        ]
-        to_run = analyses_to_run or all_analyses
+        )
+        to_run = analyses_to_run or list(all_analyses)
 
-        results: dict[str, AnalysisResult] = {}
         analysis = AugmentationAnalysis()
 
         # Collect all suggestions for consolidation
@@ -262,7 +270,10 @@ class GraphAugmentationAnalyzer(dspy.Module):
         all_relationships: list[SuggestedRelationship] = []
         all_attributes: list[SuggestedAttribute] = []
 
-        # Run each requested analysis
+        # Track success for final response
+        any_success = False
+
+        # Run each requested analysis - each returns a specific typed result
         for analysis_type in to_run:
             if analysis_type not in all_analyses:
                 continue
@@ -271,35 +282,43 @@ class GraphAugmentationAnalyzer(dspy.Module):
 
             if analysis_type == "investment_themes":
                 result = self.investment_themes(document_context)
-                if result.success and isinstance(result.data, InvestmentThemesAnalysis):
+                if result.success and result.data:
                     analysis.investment_themes = result.data
+                    any_success = True
+                status = "OK" if result.success else f"FAILED: {result.error}"
 
             elif analysis_type == "new_entities":
                 result = self.new_entities(document_context)
-                if result.success and isinstance(result.data, NewEntitiesAnalysis):
+                if result.success and result.data:
                     analysis.new_entities = result.data
                     all_nodes.extend(result.data.suggested_nodes)
+                    any_success = True
+                status = "OK" if result.success else f"FAILED: {result.error}"
 
             elif analysis_type == "missing_attributes":
                 result = self.missing_attributes(document_context)
-                if result.success and isinstance(result.data, MissingAttributesAnalysis):
+                if result.success and result.data:
                     analysis.missing_attributes = result.data
                     all_attributes.extend(result.data.suggested_attributes)
+                    any_success = True
+                status = "OK" if result.success else f"FAILED: {result.error}"
 
             elif analysis_type == "implied_relationships":
                 result = self.implied_relationships(document_context)
-                if result.success and isinstance(result.data, ImpliedRelationshipsAnalysis):
+                if result.success and result.data:
                     analysis.implied_relationships = result.data
                     all_relationships.extend(result.data.suggested_relationships)
+                    any_success = True
+                status = "OK" if result.success else f"FAILED: {result.error}"
 
-            results[analysis_type] = result
+            else:
+                status = "SKIPPED"
 
-            status = "OK" if result.success else f"FAILED: {result.error}"
             print(f"    [{status}]")
 
         # Build the consolidated response
         response = AugmentationResponse(
-            success=any(r.success for r in results.values()),
+            success=any_success,
             analysis=analysis,
             all_suggested_nodes=all_nodes,
             all_suggested_relationships=all_relationships,
@@ -313,7 +332,7 @@ class GraphAugmentationAnalyzer(dspy.Module):
         self,
         analysis_type: str,
         document_context: str,
-    ) -> AnalysisResult:
+    ) -> InvestmentThemesResult | NewEntitiesResult | MissingAttributesResult | ImpliedRelationshipsResult:
         """
         Run a single analysis type.
 
@@ -322,22 +341,21 @@ class GraphAugmentationAnalyzer(dspy.Module):
             document_context: The document content to analyze.
 
         Returns:
-            AnalysisResult for the specified analysis.
+            The typed result for the specified analysis.
 
         Raises:
             ValueError: If analysis_type is not recognized.
         """
-        analyzers = {
-            "investment_themes": self.investment_themes,
-            "new_entities": self.new_entities,
-            "missing_attributes": self.missing_attributes,
-            "implied_relationships": self.implied_relationships,
-        }
-
-        if analysis_type not in analyzers:
+        if analysis_type == "investment_themes":
+            return self.investment_themes(document_context)
+        elif analysis_type == "new_entities":
+            return self.new_entities(document_context)
+        elif analysis_type == "missing_attributes":
+            return self.missing_attributes(document_context)
+        elif analysis_type == "implied_relationships":
+            return self.implied_relationships(document_context)
+        else:
             raise ValueError(
                 f"Unknown analysis type: {analysis_type}. "
-                f"Must be one of: {list(analyzers.keys())}"
+                f"Must be one of: investment_themes, new_entities, missing_attributes, implied_relationships"
             )
-
-        return analyzers[analysis_type](document_context)

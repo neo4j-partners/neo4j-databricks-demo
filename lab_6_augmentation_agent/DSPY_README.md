@@ -61,50 +61,6 @@ lab_6_augmentation_agent/
 └── DSPYING.md              # Implementation proposal
 ```
 
-## Usage Examples
-
-### Run from Python
-
-```python
-from lab_6_augmentation_agent.agent_dspy import DSPyGraphAugmentationAgent
-
-# Initialize agent
-agent = DSPyGraphAugmentationAgent(
-    temperature=0.1,
-    max_tokens=4000,
-)
-
-# Run all analyses
-document_context = "Your document content here..."
-response = agent.run_all_analyses(document_context)
-
-# Access results
-print(f"Total suggestions: {response.total_suggestions}")
-print(f"Suggested nodes: {len(response.all_suggested_nodes)}")
-print(f"Suggested relationships: {len(response.all_suggested_relationships)}")
-print(f"Suggested attributes: {len(response.all_suggested_attributes)}")
-
-# Access typed data
-for node in response.all_suggested_nodes:
-    print(f"  - {node.label}: {node.description}")
-```
-
-### Run Single Analysis
-
-```python
-from lab_6_augmentation_agent.agent_dspy import DSPyGraphAugmentationAgent
-
-agent = DSPyGraphAugmentationAgent()
-result = agent.run_single_analysis("new_entities", document_context)
-
-if result.success:
-    analysis = result.data  # NewEntitiesAnalysis typed object
-    for node in analysis.suggested_nodes:
-        print(f"Node: {node.label}")
-        print(f"  Key: {node.key_property}")
-        print(f"  Confidence: {node.confidence}")
-```
-
 ## How It Works
 
 ### DSPy Signatures
@@ -142,9 +98,25 @@ class NewEntitiesAnalyzer(dspy.Module):
         return result.analysis  # Typed NewEntitiesAnalysis
 ```
 
-### JSONAdapter for Structured Output
+### Custom LM Adapter for Multi-Agent Supervisor
 
-The agent uses `dspy.JSONAdapter()` which leverages Databricks' native `response_format` support for reliable structured output with lower latency.
+The agent includes a custom `DatabricksResponsesLM` class that works with Multi-Agent Supervisor (MAS) endpoints. MAS endpoints use the Databricks Responses API format instead of OpenAI Chat Completions:
+
+```python
+# Responses API format (MAS endpoints)
+client.responses.create(
+    model="mas-endpoint",
+    input=[{"role": "user", "content": "..."}]
+)
+
+# vs OpenAI format (Foundation Model APIs)
+client.chat.completions.create(
+    model="model-name",
+    messages=[{"role": "user", "content": "..."}]
+)
+```
+
+The adapter handles this conversion automatically. Use `use_responses_api=True` (default) for MAS endpoints.
 
 ## Comparison with Original Agent
 
