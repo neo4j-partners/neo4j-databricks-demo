@@ -7,6 +7,7 @@ This lab uses LangGraph and ChatDatabricks to analyze unstructured documents and
 - **Native Structured Output** - Uses `ChatDatabricks.with_structured_output()` for validated Pydantic models
 - **LangGraph Workflow** - StateGraph orchestration with memory persistence
 - **Modular Architecture** - Clean separation of concerns in `core/` module
+- **Interactive Notebook** - Step-by-step exploration with separate cells per analysis
 - **Multiple Implementations** - LangGraph (primary) and DSPy (experimental)
 
 ---
@@ -17,16 +18,35 @@ This lab uses LangGraph and ChatDatabricks to analyze unstructured documents and
 2. `.env` file with `DATABRICKS_HOST` and `DATABRICKS_TOKEN`
 3. Python dependencies installed via `uv sync`
 
+### Databricks Cluster Libraries
+
+Install these libraries on your Databricks cluster:
+
+| Library | Version | PyPI |
+|---------|---------|------|
+| `databricks-langchain` | >= 0.11.0 | [pypi.org/project/databricks-langchain](https://pypi.org/project/databricks-langchain/) |
+| `langgraph` | >= 1.0.5 | [pypi.org/project/langgraph](https://pypi.org/project/langgraph/) |
+| `langchain-core` | >= 1.2.0 | [pypi.org/project/langchain-core](https://pypi.org/project/langchain-core/) |
+| `pydantic` | >= 2.12.5 | [pypi.org/project/pydantic](https://pypi.org/project/pydantic/) |
+
+Install via cluster UI or `%pip`:
+```python
+%pip install databricks-langchain>=0.11.0 langgraph>=1.0.5 langchain-core>=1.2.0 pydantic>=2.12.5
+```
+
 ---
 
 ## Quick Start
 
 ```bash
-# Run the agent
+# Run the CLI agent (all analyses at once)
 uv run python -m lab_6_augmentation_agent.augmentation_agent
 
 # Export results to JSON
 uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.json
+
+# Interactive exploration (Jupyter notebook)
+jupyter notebook lab_6_augmentation_agent/augmentation_agent_notebook.ipynb
 ```
 
 ---
@@ -35,21 +55,23 @@ uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.js
 
 ```
 lab_6_augmentation_agent/
-├── augmentation_agent.py     # Main entry point
-├── schemas.py                # Pydantic schemas for structured output
-├── core/                     # Modular LangGraph components
-│   ├── __init__.py          # Package exports
-│   ├── config.py            # Configuration, AnalysisType enum
-│   ├── state.py             # LangGraph state schema
-│   ├── client.py            # ChatDatabricks structured output client
-│   ├── nodes.py             # LangGraph node functions
-│   ├── graph.py             # Graph construction & agent class
-│   └── output.py            # Demo output formatting
-├── dspy_modules/            # DSPy implementation (experimental)
+├── augmentation_agent.py           # CLI entry point
+├── augmentation_agent_notebook.ipynb # Interactive notebook
+├── schemas.py                      # Pydantic schemas for structured output
+├── core/                           # Modular LangGraph components
+│   ├── __init__.py                # Package exports
+│   ├── config.py                  # Configuration, AnalysisType enum
+│   ├── state.py                   # LangGraph state schema
+│   ├── client.py                  # ChatDatabricks structured output client
+│   ├── nodes.py                   # LangGraph node functions
+│   ├── graph.py                   # Graph construction & agent class
+│   ├── output.py                  # Demo output formatting
+│   └── utils.py                   # Reusable utilities for CLI/notebooks
+├── dspy_modules/                  # DSPy implementation (experimental)
 │   ├── config.py
 │   ├── signatures.py
 │   └── analyzers.py
-└── agent_dspy.py            # DSPy entry point
+└── agent_dspy.py                  # DSPy entry point
 ```
 
 ---
@@ -67,105 +89,14 @@ The agent performs four types of analysis:
 
 ---
 
-## Usage Examples
+## Notebook Usage
 
-### Basic Usage
+The `augmentation_agent_notebook.ipynb` provides interactive exploration with:
 
-```python
-from lab_6_augmentation_agent import GraphAugmentationAgent, AnalysisType
+- **Separate cells for each analysis** - See what happens at each step
+- **Detailed result display** - Examine suggestions with evidence and examples
+- **Easy re-runs** - Re-run individual analyses without starting over
 
-# Create agent
-agent = GraphAugmentationAgent()
-
-# Run all analyses
-result = agent.run_all_analyses(thread_id="my-session")
-
-# Get structured response
-response = agent.get_structured_response()
-print(f"Found {response.total_suggestions} suggestions")
-print(f"High confidence: {response.high_confidence_count}")
-```
-
-### Access Individual Results
-
-```python
-# Get suggested nodes
-nodes = agent.get_suggested_nodes()
-for node in nodes:
-    print(f"{node.label}: {node.description}")
-
-# Get suggested relationships
-relationships = agent.get_suggested_relationships()
-for rel in relationships:
-    print(f"({rel.source_label})-[{rel.relationship_type}]->({rel.target_label})")
-
-# Get suggested attributes
-attributes = agent.get_suggested_attributes()
-for attr in attributes:
-    print(f"{attr.target_label}.{attr.property_name}: {attr.property_type}")
-```
-
-### Run Single Analysis
-
-```python
-# Run just one analysis type
-result = agent.run_single_analysis(AnalysisType.NEW_ENTITIES)
-```
-
-### Export Results
-
-```python
-# Export to JSON
-agent.export_results("augmentation_results.json")
-```
-
----
-
-## Example Output
-
-```
-======================================================================
- GRAPH AUGMENTATION AGENT
-======================================================================
-
-  Model:  databricks-claude-3-7-sonnet
-  Method: ChatDatabricks.with_structured_output()
-
-----------------------------------------------------------------------
- RESULTS
-----------------------------------------------------------------------
-
-  [Investment Themes] 3 items (14.1s)
-    - Artificial Intelligence and Machine Learning [high]
-    - Clean Energy Transition [high]
-    - Digital Health [medium]
-
-  [New Entities] 4 items (30.6s)
-    - FINANCIAL_GOAL [high]
-    - INVESTMENT_PREFERENCE [high]
-    - LIFE_STAGE [high]
-    ... and 1 more
-
-----------------------------------------------------------------------
- SUMMARY
-----------------------------------------------------------------------
-
-  Total Suggestions: 19
-  High Confidence:   10
-
-  Suggested Nodes (4):
-    - FINANCIAL_GOAL [high]
-    - INVESTMENT_PREFERENCE [high]
-    - LIFE_STAGE [high]
-    - SERVICE_PREFERENCE [medium]
-
-  Suggested Relationships (5):
-    - (Customer)-[HAS_GOAL]->(Goal) [high]
-    - (Customer)-[INTERESTED_IN]->(Sector) [medium]
-    ...
-```
-
----
 
 ## Architecture
 
@@ -207,13 +138,22 @@ agent.export_results("augmentation_results.json")
 |----------|-------------|---------|
 | `DATABRICKS_HOST` | Databricks workspace URL | Required |
 | `DATABRICKS_TOKEN` | Databricks access token | Required |
-| `LLM_MODEL` | Foundation model to use | `databricks-claude-3-7-sonnet` |
+| `LLM_MODEL` | Foundation model to use | `databricks-claude-sonnet-4` |
 
 ### Supported Models
 
-- `databricks-claude-3-7-sonnet` (Anthropic Claude)
-- `databricks-meta-llama-3-3-70b-instruct` (Meta Llama)
-- `databricks-gpt-4o`, `databricks-gpt-4o-mini` (OpenAI)
+**Claude (Anthropic)** - Recommended for structured output:
+- `databricks-claude-sonnet-4-5` (Latest - Claude Sonnet 4.5)
+- `databricks-claude-opus-4-5` (Claude Opus 4.5)
+- `databricks-claude-sonnet-4` (Claude Sonnet 4)
+- `databricks-claude-opus-4-1` (Claude Opus 4.1)
+- `databricks-claude-3-7-sonnet` (Claude 3.7 Sonnet)
+
+**Llama (Meta)**:
+- `databricks-meta-llama-3-3-70b-instruct`
+
+**GPT (OpenAI)**:
+- `databricks-gpt-4o`, `databricks-gpt-4o-mini`
 
 ---
 

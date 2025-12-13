@@ -29,12 +29,8 @@ References:
 from __future__ import annotations
 
 import argparse
-from typing import Final
 
-from lab_6_augmentation_agent.schemas import (
-    AugmentationResponse,
-    ConfidenceLevel,
-)
+from lab_6_augmentation_agent.schemas import AugmentationResponse
 from lab_6_augmentation_agent.dspy_modules.config import (
     configure_dspy,
     setup_mlflow_tracing,
@@ -46,61 +42,14 @@ from lab_6_augmentation_agent.dspy_modules.analyzers import (
     MissingAttributesResult,
     ImpliedRelationshipsResult,
 )
+from lab_6_augmentation_agent.utils import (
+    ANALYSIS_TYPES,
+    SAMPLE_DOCUMENT_CONTEXT,
+    print_response_summary,
+)
 
 # Union of all result types for type hints
 AnalysisResult = InvestmentThemesResult | NewEntitiesResult | MissingAttributesResult | ImpliedRelationshipsResult
-
-
-# Analysis types available (immutable tuple for type safety)
-ANALYSIS_TYPES: Final[tuple[str, ...]] = (
-    "investment_themes",
-    "new_entities",
-    "missing_attributes",
-    "implied_relationships",
-)
-
-# Sample document context for testing
-# In production, this would come from your Multi-Agent Supervisor
-SAMPLE_DOCUMENT_CONTEXT: Final[str] = """
-Market Research Analysis - Q4 2024
-
-Investment Themes:
-1. Renewable Energy Transition
-   - Market size: $495 billion globally
-   - Growth projection: 15% CAGR through 2030
-   - Key sectors: Solar, Wind, Battery Storage
-   - Key companies: Tesla, NextEra Energy, Vestas
-
-2. AI/ML Infrastructure
-   - Explosive growth in compute demand
-   - Data center investments surging
-   - Key players: NVIDIA, AMD, Microsoft Azure
-
-Customer Profile Data:
-- Customer ID: C-12345
-- Name: John Smith
-- Occupation: Software Engineer at TechCorp
-- Annual Income: $185,000
-- Investment Goals: Retirement planning, children's education fund
-- Risk Tolerance: Moderate
-- Interests: Technology stocks, ESG investing, Real estate
-- Life Stage: Mid-career with young family
-- Preferred Communication: Email, Mobile app
-
-Entity Relationships Observed:
-- John Smith WORKS_AT TechCorp
-- John Smith HAS_GOAL "Retirement by 60"
-- John Smith HAS_GOAL "College fund for kids"
-- John Smith INTERESTED_IN "ESG Investing"
-- John Smith SIMILAR_TO customers with tech backgrounds and moderate risk
-
-Missing from current graph:
-- Customer occupation details
-- Investment goals as separate nodes
-- Interest categories
-- Life stage classification
-- Risk tolerance scoring
-"""
 
 
 class DSPyGraphAugmentationAgent:
@@ -192,55 +141,6 @@ class DSPyGraphAugmentationAgent:
 
         print(f"\nRunning {analysis_type} analysis...")
         return self.analyzer.run_single(analysis_type, document_context)
-
-
-def print_response_summary(response: AugmentationResponse) -> None:
-    """Print a formatted summary of the augmentation response."""
-    print("\n" + "=" * 70)
-    print("AUGMENTATION ANALYSIS RESULTS")
-    print("=" * 70)
-
-    print(f"\nSuccess: {response.success}")
-    print(f"Total suggestions: {response.total_suggestions}")
-    print(f"High confidence: {response.high_confidence_count}")
-
-    # Investment Themes
-    if response.analysis.investment_themes:
-        themes = response.analysis.investment_themes
-        print(f"\n--- Investment Themes ({len(themes.themes)} found) ---")
-        print(f"Summary: {themes.summary[:200]}..." if len(themes.summary) > 200 else f"Summary: {themes.summary}")
-        for theme in themes.themes[:3]:
-            confidence = theme.confidence.value if isinstance(theme.confidence, ConfidenceLevel) else theme.confidence
-            print(f"  - {theme.name} [{confidence}]")
-            if theme.market_size:
-                print(f"    Market: {theme.market_size}")
-
-    # Suggested Nodes
-    if response.all_suggested_nodes:
-        print(f"\n--- Suggested Nodes ({len(response.all_suggested_nodes)}) ---")
-        for node in response.all_suggested_nodes[:5]:
-            confidence = node.confidence.value if isinstance(node.confidence, ConfidenceLevel) else node.confidence
-            print(f"  - {node.label} [{confidence}]")
-            print(f"    Key property: {node.key_property}")
-            print(f"    {node.description[:60]}...")
-
-    # Suggested Relationships
-    if response.all_suggested_relationships:
-        print(f"\n--- Suggested Relationships ({len(response.all_suggested_relationships)}) ---")
-        for rel in response.all_suggested_relationships[:5]:
-            confidence = rel.confidence.value if isinstance(rel.confidence, ConfidenceLevel) else rel.confidence
-            print(f"  - ({rel.source_label})-[{rel.relationship_type}]->({rel.target_label}) [{confidence}]")
-            print(f"    {rel.description[:60]}...")
-
-    # Suggested Attributes
-    if response.all_suggested_attributes:
-        print(f"\n--- Suggested Attributes ({len(response.all_suggested_attributes)}) ---")
-        for attr in response.all_suggested_attributes[:5]:
-            confidence = attr.confidence.value if isinstance(attr.confidence, ConfidenceLevel) else attr.confidence
-            print(f"  - {attr.target_label}.{attr.property_name}: {attr.property_type} [{confidence}]")
-            print(f"    {attr.description[:60]}...")
-
-    print("\n" + "=" * 70)
 
 
 def main(

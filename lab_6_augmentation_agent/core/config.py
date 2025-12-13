@@ -46,11 +46,17 @@ class AnalysisType(StrEnum):
 # Foundation Model configuration
 # Reference: https://docs.databricks.com/aws/en/machine-learning/model-serving/score-foundation-models
 #
-# Supported models for structured output:
-#   - databricks-claude-3-7-sonnet (Anthropic Claude)
-#   - databricks-meta-llama-3-3-70b-instruct
+# Supported Claude models (recommended for structured output):
+#   - databricks-claude-sonnet-4-5 (Latest - Claude Sonnet 4.5)
+#   - databricks-claude-opus-4-5 (Claude Opus 4.5)
+#   - databricks-claude-sonnet-4 (Claude Sonnet 4)
+#   - databricks-claude-opus-4-1 (Claude Opus 4.1)
+#   - databricks-claude-3-7-sonnet (Claude 3.7 Sonnet)
+#
+# Other supported models:
+#   - databricks-meta-llama-3-3-70b-instruct (Meta Llama)
 #   - databricks-gpt-4o, databricks-gpt-4o-mini (OpenAI)
-LLM_MODEL = os.environ.get("LLM_MODEL", "databricks-claude-3-7-sonnet")
+LLM_MODEL = os.environ.get("LLM_MODEL", "databricks-claude-sonnet-4-5")
 
 # Retry configuration for transient failures
 MAX_RETRIES = 2

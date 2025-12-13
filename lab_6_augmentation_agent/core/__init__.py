@@ -11,6 +11,7 @@ Modules:
     nodes: LangGraph node functions
     graph: Graph construction and agent class
     output: Demo output formatting helpers
+    utils: Reusable utilities for CLI and notebooks
 """
 
 from lab_6_augmentation_agent.core.config import (
@@ -37,6 +38,14 @@ from lab_6_augmentation_agent.core.output import (
     print_analysis_result,
     print_summary,
 )
+from lab_6_augmentation_agent.core.utils import (
+    setup_environment,
+    run_single_analysis,
+    format_analysis_result,
+    display_suggestions,
+    get_high_confidence_items,
+    get_model_info,
+)
 
 __all__ = [
     # Config
@@ -58,4 +67,11 @@ __all__ = [
     "print_section",
     "print_analysis_result",
     "print_summary",
+    # Utils
+    "setup_environment",
+    "run_single_analysis",
+    "format_analysis_result",
+    "display_suggestions",
+    "get_high_confidence_items",
+    "get_model_info",
 ]

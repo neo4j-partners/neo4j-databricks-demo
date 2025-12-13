@@ -24,59 +24,40 @@ Documentation References:
       https://langchain-ai.github.io/langgraph/concepts/persistence/
 
 Usage:
+    # CLI application
     uv run python -m lab_6_augmentation_agent.augmentation_agent
     uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.json
 
+    # Jupyter notebook
+    See augmentation_agent_notebook.ipynb for interactive exploration
+
 Module Structure:
-    augmentation_agent.py  - Main entry point (this file)
-    schemas.py             - Pydantic schemas for structured output
-    core/                  - Modular components
-        config.py          - Configuration and analysis types
-        state.py           - LangGraph state schema
-        client.py          - ChatDatabricks structured output client
-        nodes.py           - LangGraph node functions
-        graph.py           - Graph construction and agent class
-        output.py          - Demo output formatting helpers
+    augmentation_agent.py           - Main CLI entry point (this file)
+    augmentation_agent_notebook.ipynb - Interactive notebook
+    schemas.py                      - Pydantic schemas for structured output
+    core/                           - Modular components
+        config.py                   - Configuration and analysis types
+        state.py                    - LangGraph state schema
+        client.py                   - ChatDatabricks structured output client
+        nodes.py                    - LangGraph node functions
+        graph.py                    - Graph construction and agent class
+        output.py                   - Demo output formatting helpers
+        utils.py                    - Reusable utilities for CLI and notebooks
 """
 
 from __future__ import annotations
 
-import os
 import time
-from pathlib import Path
-
-from dotenv import load_dotenv
-
-# =============================================================================
-# ENVIRONMENT SETUP
-# =============================================================================
-
-# Load .env from project root
-# Reference: https://docs.databricks.com/aws/en/dev-tools/auth/
-PROJECT_ROOT = Path(__file__).parent.parent
-load_dotenv(PROJECT_ROOT / ".env", override=True)
-
-# Clear conflicting auth methods - use only HOST + TOKEN from .env
-for var in [
-    "DATABRICKS_CONFIG_PROFILE",
-    "DATABRICKS_CLIENT_ID",
-    "DATABRICKS_CLIENT_SECRET",
-    "DATABRICKS_ACCOUNT_ID",
-]:
-    os.environ.pop(var, None)
-
-# =============================================================================
-# IMPORTS FROM CORE MODULES
-# =============================================================================
 
 from lab_6_augmentation_agent.core import (
     AnalysisType,
     GraphAugmentationAgent,
-    LLM_MODEL,
+    get_model_info,
     print_analysis_result,
     print_header,
     print_section,
     print_summary,
+    setup_environment,
 )
 
 # Re-export for convenience
@@ -104,10 +85,16 @@ def main(export_path: str | None = None) -> tuple[GraphAugmentationAgent, dict]:
     Returns:
         Tuple of (agent, final_state)
     """
+    # Setup environment (loads .env and configures auth)
+    setup_environment()
+
+    # Get model info
+    model_info = get_model_info()
+
     print_header("GRAPH AUGMENTATION AGENT")
-    print(f"\n  Model:  {LLM_MODEL}")
-    print("  Method: ChatDatabricks.with_structured_output()")
-    print("  Docs:   https://api-docs.databricks.com/python/databricks-ai-bridge/latest/")
+    print(f"\n  Model:  {model_info['model']}")
+    print(f"  Method: {model_info['method']}")
+    print(f"  Docs:   {model_info['docs']}")
 
     # Initialize agent
     agent = GraphAugmentationAgent()
@@ -161,8 +148,11 @@ Examples:
   uv run python -m lab_6_augmentation_agent.augmentation_agent
   uv run python -m lab_6_augmentation_agent.augmentation_agent --export results.json
 
+Interactive:
+  See augmentation_agent_notebook.ipynb for step-by-step exploration
+
 Module Structure:
-  augmentation_agent.py  - Main entry point
+  augmentation_agent.py  - Main CLI entry point
   schemas.py             - Pydantic schemas
   core/                  - Modular components
         """,
