@@ -81,17 +81,27 @@ The Knowledge Agent analyzes customer profiles and research documents from the U
 
 1. Go to **AI/BI** → **Agents** → **Create Agent** → **Knowledge Agent**
 
-2. Connect data source:
-   - Select **Unity Catalog Volume**
-   - Browse to your volume (e.g., `neo4j_demo.raw_data.source_files`)
-   - The agent indexes HTML files: customer profiles, bank profiles, company analyses, investment research
+2. **Basic Info**:
+   - **Name**: `graph-augmentation-knowledge-assistant` (only letters, numbers, and dashes allowed)
+   - **Description**: Copy the description text from below
 
-3. Configure:
-   - **Name**: `Customer Insights Knowledge Agent`
-   - **Description**: (copy the text below)
-   - **Instructions**: (copy the text below)
+3. **Configure Knowledge Sources**:
+   - **Type**: Select `UC Files` from dropdown
+   - **Source**: Click the folder icon and navigate to your volume:
+     - **All catalogs** → **your_catalog** → **your_schema** → **source_files** → **html**
+     - Example: `/Volumes/neo4j_augmentation_demo/raw_data/source_files/html`
+   - **Name**: `investment-research-docs`
+   - **Describe the content**: Copy the content description text from below
 
-### Description (copy this)
+   The agent will index all HTML files in the directory:
+   - Customer profiles (`customer_profile_*.html`)
+   - Bank profiles (`bank_profile_*.html`, `bank_branch_*.html`)
+   - Company research (`company_analysis_*.html`, `company_quarterly_report_*.html`)
+   - Investment guides (`investment_strategy_*.html`, `real_estate_investment_guide.html`)
+   - Market research (`market_analysis_*.html`, `renewable_energy_*.html`)
+   - Industry insights (`retail_investment_disruption_*.html`, `regulatory_compliance_*.html`)
+
+### Agent Description (paste into "Description" field)
 
 ```
 This knowledge base contains comprehensive customer profiles, institutional data, and investment research documents for a retail investment platform. The content includes:
@@ -111,7 +121,13 @@ INDUSTRY INSIGHTS: Research on financial services industry transformation includ
 Use this knowledge base to answer questions about customer investment interests and preferences, risk tolerance narratives, personal financial goals and life circumstances, banking relationship histories, institutional capabilities and specializations, company fundamentals and performance, investment strategy recommendations by risk profile, sector trends and opportunities, retirement planning approaches, real estate investing strategies, regulatory compliance requirements, and industry disruption.
 ```
 
-### Instructions (copy this)
+### Knowledge Source Content Description (paste into "Describe the content" field)
+
+```
+HTML documents containing retail investment customer profiles with demographics, risk tolerance, investment preferences, and financial goals. Also includes bank and branch profiles, company analysis reports, quarterly earnings summaries, investment strategy guides for different risk profiles, market research on technology and renewable energy sectors, and industry insights on financial services transformation.
+```
+
+### Instructions (optional - if the UI has an Instructions field)
 
 ```
 You are analyzing unstructured customer profiles and investment research documents. Your primary objectives are to:
@@ -129,11 +145,11 @@ When answering questions, cite specific details from customer profiles including
 ### Test Queries
 
 ```
-"What investment interests does James Anderson have that aren't reflected in his current portfolio?"
-"Describe Maria Rodriguez's risk tolerance and family circumstances that influence her investment decisions"
-"What are Robert Chen's long-term financial goals and how aggressive is his investment approach?"
-"What renewable energy investment opportunities are discussed in the research documents?"
-"Compare the investment philosophies of First National Trust and Pacific Coast Bank"
+What investment interests does James Anderson have that aren't reflected in his current portfolio?
+Describe Maria Rodriguez's risk tolerance and family circumstances that influence her investment decisions
+What are Robert Chen's long-term financial goals and how aggressive is his investment approach?
+What renewable energy investment opportunities are discussed in the research documents?
+Compare the investment philosophies of First National Trust and Pacific Coast Bank
 ```
 
 ---
