@@ -22,7 +22,7 @@ import os
 
 # Multi-Agent Supervisor endpoint name
 # Override with environment variable or set directly
-LLM_ENDPOINT_NAME = os.environ.get("LLM_ENDPOINT_NAME", "mas-01875d0e-endpoint")
+LLM_ENDPOINT_NAME = os.environ.get("LLM_ENDPOINT_NAME", "mas-3ae5a347-endpoint")
 
 # Sample queries for graph augmentation analysis
 AUGMENTATION_QUERIES = [

@@ -25,22 +25,7 @@ The augmentation agent queries the Multi-Agent Supervisor to:
 
 ### 1. Get Your Endpoint Name
 
-Find your Multi-Agent Supervisor endpoint:
-- Go to **Serving** in Databricks
-- Locate your deployed Multi-Agent Supervisor
-- Copy the endpoint name (e.g., `mas-01875d0e-endpoint`)
-
-### 2. Enable MLflow Tracing
-
-MLflow tracing helps debug latency, cost, and quality issues:
-
-```python
-%pip install -U mlflow
-dbutils.library.restartPython()
-
-import mlflow
-mlflow.openai.autolog()
-```
+Use the Multi-Agent Supervisor endpoint from Lab 5. If you need to find it again, click the **cloud icon** in the top right corner of your Multi-Agent Supervisor to view the endpoint details (e.g., `mas-01875d0e-endpoint`).
 
 ---
 

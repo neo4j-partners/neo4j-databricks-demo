@@ -19,10 +19,28 @@ This lab combines the Genie and Knowledge Agent into a unified system that answe
 
 ### 2. Add Agents
 
-- **Agent 1**: Retail Investment Data Assistant (Genie) - queries structured lakehouse data
-- **Agent 2**: Customer Insights Knowledge Agent - analyzes unstructured documents
+Click **Configure Agents** to add your agents. You can select up to 20 different agents and tools.
 
-### 3. Configure
+**Agent 1: Genie Space**
+
+| Field | Value |
+|-------|-------|
+| Type | `Genie Space` |
+| Genie space | Select your Retail Investment Genie |
+| Agent Name | `agent-retail-investment-genie` |
+| Describe the content | `Answers questions about retail investment customers, account balances, portfolio holdings, stock positions, banking relationships, and transaction history across structured data extracted from a graph database into Delta Lake tables.` |
+
+**Agent 2: Knowledge Agent**
+
+
+| Field | Value |
+|-------|-------|
+| Type | `Agent Endpoint` |
+| Agent Endpoint | Select your Knowledge Agent endpoint (e.g., `ka-6f0994b4-endpoint`) |
+| Agent Name | `graph-augmentation-knowledge-assistant` |
+| Describe the content | `This knowledge base contains comprehensive customer profiles, institutional data, and investment research documents for a retail investment platform. The content includes: CUSTOMER PROFILES: Detailed narratives containing demographics, risk profiles, current account holdings, investment preferences, personal financial goals, life circumstances, stated investment interests that may not yet be reflected in portfolios, savings habits, customer service preferences, credit scores, and banking relationship history.` |
+
+### 3. Configure System Settings
 
 - **Name**: `Retail Investment Intelligence System`
 
@@ -42,6 +60,10 @@ This lab combines the Genie and Knowledge Agent into a unified system that answe
   3. Discover cross-sell opportunities based on customer insights
   4. Provide comprehensive customer analysis combining both data sources
   ```
+
+### 4. Get Endpoint Name
+
+After creating the Multi-Agent Supervisor, click the **cloud icon** in the top right corner to view the endpoint details. Copy the endpoint name (e.g., `mas-01875d0e-endpoint`) - you'll need this in Lab 6.
 
 ---
 

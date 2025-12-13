@@ -127,7 +127,7 @@ Use this knowledge base to answer questions about customer investment interests 
 HTML documents containing retail investment customer profiles with demographics, risk tolerance, investment preferences, and financial goals. Also includes bank and branch profiles, company analysis reports, quarterly earnings summaries, investment strategy guides for different risk profiles, market research on technology and renewable energy sectors, and industry insights on financial services transformation.
 ```
 
-### Instructions (optional - if the UI has an Instructions field)
+### Instructions in the Optional Field
 
 ```
 You are analyzing unstructured customer profiles and investment research documents. Your primary objectives are to:
@@ -141,6 +141,10 @@ You are analyzing unstructured customer profiles and investment research documen
 
 When answering questions, cite specific details from customer profiles including customer IDs, ages, occupations, risk profiles, and direct references to their stated interests. Cross-reference market research documents when discussing investment opportunities related to customer interests.
 ```
+
+### 4. Get Endpoint Name
+
+After creating the Knowledge Agent, click the **cloud icon** in the top right corner to view the endpoint details. Copy the endpoint name (e.g., `ka-6f0994b4-endpoint`) - you'll need this in Lab 5.
 
 ### Test Queries
 
