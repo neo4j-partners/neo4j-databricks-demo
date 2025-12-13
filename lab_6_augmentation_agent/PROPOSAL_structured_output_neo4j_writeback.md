@@ -110,20 +110,35 @@ Expected outcomes:
 **Objective**: Rewrite the augmentation agent using LangGraph StateGraph to provide proper workflow orchestration, state management, and memory persistence.
 
 **Tasks**:
-- [ ] Create AgentState TypedDict defining the state schema with fields for messages, analysis results, and intermediate findings
-- [ ] Set up LangGraph StateGraph with the AgentState schema
-- [ ] Implement analysis node functions for each analysis type (investment themes, new entities, missing attributes, implied relationships)
-- [ ] Define conditional edges to route between analysis steps based on current state
-- [ ] Add a checkpointer (MemorySaver) to enable conversation memory and session persistence
-- [ ] Connect to the Multi-Agent Supervisor endpoint using the existing Databricks authentication pattern
-- [ ] Update main entry point to compile and invoke the LangGraph workflow
+- [x] Create AgentState TypedDict defining the state schema with fields for messages, analysis results, and intermediate findings
+- [x] Set up LangGraph StateGraph with the AgentState schema
+- [x] Implement analysis node functions for each analysis type (investment themes, new entities, missing attributes, implied relationships)
+- [x] Define conditional edges to route between analysis steps based on current state
+- [x] Add a checkpointer (MemorySaver) to enable conversation memory and session persistence
+- [x] Connect to the Multi-Agent Supervisor endpoint using the existing Databricks authentication pattern
+- [x] Update main entry point to compile and invoke the LangGraph workflow
 
 **Test**:
-- [ ] Unit test that verifies the graph compiles without errors
-- [ ] Integration test that runs a simple query through the workflow and confirms state updates correctly
-- [ ] Test that memory persists across multiple invocations using the same thread_id
+- [x] Unit test that verifies the graph compiles without errors
+- [x] Integration test that runs a simple query through the workflow and confirms state updates correctly
+- [x] Test that memory persists across multiple invocations using the same thread_id
 
-**Status**: Pending
+**Status**: Complete
+
+**Test Results** (verified with `uv run`):
+- Graph compiles successfully with all 5 nodes: __start__, initialize, select_next, run_analysis, summarize
+- Workflow runs all 4 analyses in sequence with proper state transitions
+- MemorySaver checkpointer correctly persists state across invocations
+- Thread isolation verified: different thread_ids maintain independent state
+
+**Implementation Notes**:
+- Created AgentState TypedDict with messages (using add_messages reducer), current_analysis, completed_analyses, results, error, and run_all fields
+- Created AnalysisResult TypedDict for structured storage of each analysis outcome
+- Implemented four node functions: initialize_node, select_next_analysis_node, run_analysis_node, summarize_node
+- Added two routing functions with conditional edges: should_continue_analysis and should_select_next
+- Workflow pattern: START -> initialize -> select_next -> (run_analysis <-> select_next) -> summarize -> END
+- GraphAugmentationAgent class wraps the workflow with methods for run_all_analyses, run_single_analysis, get_state, get_results
+- MemorySaver checkpointer enables state persistence across invocations using thread_id
 
 ---
 
@@ -132,17 +147,25 @@ Expected outcomes:
 **Objective**: Create Pydantic models that represent the structured output the agent should return.
 
 **Tasks**:
-- [ ] Create SuggestedNode model with fields for label, properties, key property, confidence level, and source evidence
-- [ ] Create SuggestedRelationship model with fields for type, source label, target label, properties, confidence level, and source evidence
-- [ ] Create SuggestedAttribute model with fields for target label, property name, property type, confidence level, and source evidence
-- [ ] Create AugmentationAnalysis model that contains lists of the above three types
-- [ ] Create AugmentationResponse model as the top-level response wrapper
+- [x] Create SuggestedNode model with fields for label, properties, key property, confidence level, and source evidence
+- [x] Create SuggestedRelationship model with fields for type, source label, target label, properties, confidence level, and source evidence
+- [x] Create SuggestedAttribute model with fields for target label, property name, property type, confidence level, and source evidence
+- [x] Create AugmentationAnalysis model that contains lists of the above three types
+- [x] Create AugmentationResponse model as the top-level response wrapper
 
 **Test**:
-- [ ] Unit test that validates sample JSON data against each Pydantic model
-- [ ] Test that invalid data raises validation errors with clear messages
+- [x] Unit test that validates sample JSON data against each Pydantic model
+- [x] Test that invalid data raises validation errors with clear messages
 
-**Status**: Pending
+**Status**: Complete
+
+**Implementation Notes**:
+- Created `schemas.py` with comprehensive Pydantic models for all suggestion types
+- Added `ConfidenceLevel` enum (HIGH, MEDIUM, LOW) for confidence scoring
+- Created `PropertyDefinition` model for node and relationship properties
+- Analysis-specific models: `InvestmentThemesAnalysis`, `NewEntitiesAnalysis`, `MissingAttributesAnalysis`, `ImpliedRelationshipsAnalysis`
+- Top-level `AugmentationResponse` includes consolidated lists and statistics via `compute_statistics()` method
+- All models include proper field descriptions and default values
 
 ---
 
@@ -151,18 +174,36 @@ Expected outcomes:
 **Objective**: Modify the LangGraph agent to use the response_format parameter for structured output that matches the Pydantic schemas.
 
 **Tasks**:
-- [ ] Configure the LangGraph agent with response_format parameter pointing to the AugmentationResponse schema
-- [ ] Update node functions to extract structured data from the agent response
-- [ ] Add error handling for responses that do not match the expected schema
-- [ ] Update the AgentState to store parsed structured results alongside raw messages
-- [ ] Implement a post-processing step that validates all structured output before returning
+- [x] Configure the LangGraph agent with response_format parameter pointing to the AugmentationResponse schema
+- [x] Update node functions to extract structured data from the agent response
+- [x] Add error handling for responses that do not match the expected schema
+- [x] Update the AgentState to store parsed structured results alongside raw messages
+- [x] Implement a post-processing step that validates all structured output before returning
 
 **Test**:
-- [ ] Integration test that calls the agent and validates the response parses into valid Pydantic models
-- [ ] Test that the agent returns at least one suggestion for each analysis type
-- [ ] Test that malformed responses are handled gracefully with clear error messages
+- [x] Integration test that calls the agent and validates the response parses into valid Pydantic models
+- [x] Test that the agent returns at least one suggestion for each analysis type
+- [x] Test that malformed responses are handled gracefully with clear error messages
 
-**Status**: Pending
+**Status**: Complete
+
+**Implementation Notes**:
+- Added `STRUCTURED_OUTPUT_PROMPTS` dictionary with JSON schema examples for each analysis type
+- Implemented `extract_json_from_text()` function that handles:
+  - Pure JSON responses
+  - JSON wrapped in markdown code blocks (`\`\`\`json ... \`\`\``)
+  - JSON embedded in prose text
+- Created dedicated parsing functions for each analysis type: `parse_investment_themes()`, `parse_new_entities()`, `parse_missing_attributes()`, `parse_implied_relationships()`
+- Added `build_augmentation_response()` to consolidate all suggestions into a single `AugmentationResponse`
+- Extended `AgentState` with `use_structured_output` flag and `structured_response` field
+- Updated `run_analysis_node` to conditionally use structured prompts and parse responses
+- Updated `summarize_node` to build and include structured response in final state
+- Added helper methods to `GraphAugmentationAgent` class:
+  - `get_structured_response()` - Returns validated `AugmentationResponse`
+  - `get_suggested_nodes()` - Returns list of `SuggestedNode`
+  - `get_suggested_relationships()` - Returns list of `SuggestedRelationship`
+  - `get_suggested_attributes()` - Returns list of `SuggestedAttribute`
+- Added command-line argument `--no-structured` for toggling structured output mode
 
 ---
 
