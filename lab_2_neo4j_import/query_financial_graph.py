@@ -5,22 +5,22 @@ Run sample Cypher queries against the Neo4j financial demo database using PySpar
 and the Neo4j Spark Connector.
 
 Usage:
-    uv run python lab_2_neo4j_import/query_financial_graph.py [query_name]
+    Run this script in a Databricks notebook or as a job.
+    Set QUERY_TO_RUN to one of the query constants below.
 
 Available queries:
-    portfolio         - Top customers by portfolio value
-    diversified       - Accounts with multiple holdings
-    sectors           - Investment allocation by sector
-    active_senders    - Most active sending accounts
-    bidirectional     - Accounts with bidirectional flow
-    high_value        - High-value transactions (>$1000)
-    risk_profile      - Customer segmentation by risk
-    all               - Run all queries
+    QUERY_PORTFOLIO       - Top customers by portfolio value
+    QUERY_DIVERSIFIED     - Accounts with multiple holdings
+    QUERY_SECTORS         - Investment allocation by sector
+    QUERY_ACTIVE_SENDERS  - Most active sending accounts
+    QUERY_BIDIRECTIONAL   - Accounts with bidirectional flow
+    QUERY_HIGH_VALUE      - High-value transactions (>$1000)
+    QUERY_RISK_PROFILE    - Customer segmentation by risk
+    RUN_ALL               - Run all queries
 
 Prerequisites:
-    - PySpark installed (uv add pyspark)
-    - Neo4j Spark Connector JAR available
-    - .env file with Neo4j credentials
+    - Databricks cluster with Neo4j Spark Connector installed
+    - Databricks Secrets configured with 'neo4j-creds' scope
 
 Best Practices Applied:
     - Uses Spark DataSource V2 API (org.neo4j.spark.DataSource)
@@ -28,19 +28,24 @@ Best Practices Applied:
     - Pushdown optimizations enabled by default
 """
 
-import os
-import sys
-from dotenv import load_dotenv
+import time
 
-load_dotenv()
+# =============================================================================
+# QUERY SELECTION - Set this to choose which query to run
+# =============================================================================
 
-NEO4J_URI = os.getenv("NEO4J_URI")
-NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
-NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
+# Query constants
+QUERY_PORTFOLIO = "portfolio"
+QUERY_DIVERSIFIED = "diversified"
+QUERY_SECTORS = "sectors"
+QUERY_ACTIVE_SENDERS = "active_senders"
+QUERY_BIDIRECTIONAL = "bidirectional"
+QUERY_HIGH_VALUE = "high_value"
+QUERY_RISK_PROFILE = "risk_profile"
+RUN_ALL = "all"
 
-# Neo4j Spark Connector Maven coordinates
-NEO4J_CONNECTOR_PACKAGE = "org.neo4j:neo4j-connector-apache-spark_2.12:5.3.1_for_spark_3"
+# Set this variable to choose which query to run
+QUERY_TO_RUN = RUN_ALL
 
 
 QUERIES = {
@@ -161,30 +166,70 @@ QUERIES = {
 }
 
 
-def create_spark_session():
-    """Create a Spark session with Neo4j Connector configured."""
-    from pyspark.sql import SparkSession
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
-    spark = (
-        SparkSession.builder
-        .appName("Neo4j Financial Graph Queries")
-        .config("spark.jars.packages", NEO4J_CONNECTOR_PACKAGE)
-        # Configure Neo4j connection globally
-        .config("neo4j.url", NEO4J_URI)
-        .config("neo4j.authentication.type", "basic")
-        .config("neo4j.authentication.basic.username", NEO4J_USERNAME)
-        .config("neo4j.authentication.basic.password", NEO4J_PASSWORD)
-        .config("neo4j.database", NEO4J_DATABASE)
-        .getOrCreate()
-    )
+def load_config():
+    """Load configuration from Databricks Secrets."""
+    print("=" * 70)
+    print("CONFIGURATION - Loading secrets from Databricks")
+    print("=" * 70)
+    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("")
 
-    # Reduce Spark logging noise
-    spark.sparkContext.setLogLevel("WARN")
+    config = {}
 
-    return spark
+    print("[DEBUG] Retrieving secrets from scope 'neo4j-creds'...")
+
+    try:
+        config["neo4j_user"] = dbutils.secrets.get(scope="neo4j-creds", key="username")
+        print(f"  [OK] username: retrieved ({len(config['neo4j_user'])} chars)")
+    except Exception as e:
+        print(f"  [FAIL] username: {str(e)}")
+        raise
+
+    try:
+        config["neo4j_pass"] = dbutils.secrets.get(scope="neo4j-creds", key="password")
+        print(f"  [OK] password: retrieved ({len(config['neo4j_pass'])} chars, masked)")
+    except Exception as e:
+        print(f"  [FAIL] password: {str(e)}")
+        raise
+
+    try:
+        config["neo4j_url"] = dbutils.secrets.get(scope="neo4j-creds", key="url")
+        print(f"  [OK] url: {config['neo4j_url']}")
+    except Exception as e:
+        print(f"  [FAIL] url: {str(e)}")
+        raise
+
+    config["neo4j_database"] = "neo4j"
+
+    print("")
+    print("[DEBUG] Configuring Spark session for Neo4j connector...")
+    try:
+        spark.conf.set("neo4j.url", config["neo4j_url"])
+        spark.conf.set("neo4j.authentication.basic.username", config["neo4j_user"])
+        spark.conf.set("neo4j.authentication.basic.password", config["neo4j_pass"])
+        spark.conf.set("neo4j.database", config["neo4j_database"])
+        print("  [OK] Spark session configured")
+    except Exception as e:
+        print(f"  [FAIL] Spark configuration: {str(e)}")
+        raise
+
+    print("")
+    print("=" * 70)
+    print("CONFIGURATION SUMMARY")
+    print("=" * 70)
+    print(f"  Neo4j URL:    {config['neo4j_url']}")
+    print(f"  Database:     {config['neo4j_database']}")
+    print(f"  Username:     {config['neo4j_user']}")
+    print("=" * 70)
+
+    return config
 
 
-def run_query(spark, query: str, partitions: int = 1):
+def run_query(config: dict, query: str, partitions: int = 1):
     """
     Execute a Cypher query using the Neo4j Spark Connector.
 
@@ -196,6 +241,10 @@ def run_query(spark, query: str, partitions: int = 1):
     return (
         spark.read
         .format("org.neo4j.spark.DataSource")
+        .option("url", config["neo4j_url"])
+        .option("authentication.basic.username", config["neo4j_user"])
+        .option("authentication.basic.password", config["neo4j_pass"])
+        .option("database", config["neo4j_database"])
         .option("query", query)
         .option("partitions", str(partitions))
         .load()
