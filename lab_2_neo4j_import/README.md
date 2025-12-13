@@ -2,36 +2,6 @@
 
 This lab reads CSV files from the Databricks volume and imports them into your Neo4j graph database.
 
-## Prerequisites
-
-Before running this lab, ensure you have:
-
-1. Completed the setup steps in the main [README.md](../README.md)
-2. Completed [Lab 1](../lab_1_databricks_upload/README.md) to upload data files
-3. A running Neo4j instance (AuraDB or Neo4j Desktop)
-
-## Data Model
-
-The import creates a retail investment graph with the following structure:
-
-**Node Types (7)**:
-- **Customer** - Customer profile data (demographics, risk profile, credit scores)
-- **Bank** - Financial institution data
-- **Account** - Customer account information (checking, savings, investment)
-- **Company** - Corporate entity information
-- **Stock** - Stock and security data
-- **Position** - Investment portfolio holdings
-- **Transaction** - Financial transaction records
-
-**Relationship Types (7)**:
-- `(Customer)-[:HAS_ACCOUNT]->(Account)` - Customer owns accounts
-- `(Account)-[:AT_BANK]->(Bank)` - Account held at a bank
-- `(Stock)-[:OF_COMPANY]->(Company)` - Stock issued by company
-- `(Account)-[:PERFORMS]->(Transaction)` - Account performs transaction
-- `(Transaction)-[:BENEFITS_TO]->(Account)` - Transaction benefits account
-- `(Account)-[:HAS_POSITION]->(Position)` - Account holds investment position
-- `(Position)-[:OF_SECURITY]->(Stock)` - Position represents stock shares
-
 ## Running the Import
 
 ### Option A: Databricks Notebook (Recommended)

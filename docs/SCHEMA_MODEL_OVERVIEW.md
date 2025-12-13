@@ -1,7 +1,7 @@
 # Neo4j Financial Demo - Graph Schema Model Overview
 
 **Version**: 2.0
-**Last Updated**: 2025-10-28
+**Last Updated**: 2025-12-12
 **Status**: Production Ready
 
 ---
@@ -654,14 +654,14 @@ LIMIT 10
 
 | Node Type | Count | Source CSV |
 |:----------|------:|:-----------|
-| Customer | 100 | customers.csv |
-| Bank | 100 | banks.csv |
+| Customer | 102 | customers.csv |
+| Bank | 102 | banks.csv |
 | Account | 123 | accounts.csv |
-| Company | 100 | companies.csv |
-| Stock | 100 | stocks.csv |
-| Transaction (NEW) | 123 | transactions.csv (new mapping) |
-| Position (NEW) | 110 | portfolio_holdings.csv (new mapping) |
-| **TOTAL NODES** | **756** | |
+| Company | 102 | companies.csv |
+| Stock | 102 | stocks.csv |
+| Transaction | 123 | transactions.csv |
+| Position | 110 | portfolio_holdings.csv |
+| **TOTAL NODES** | **764** | |
 
 **Relationship Counts:**
 
@@ -670,10 +670,10 @@ LIMIT 10
 | HAS_ACCOUNT | 123 | Customer → Account |
 | AT_BANK | 123 | Account → Bank |
 | OF_COMPANY | 102 | Stock → Company |
-| PERFORMS (NEW) | 123 | Account → Transaction |
-| BENEFITS_TO (NEW) | 123 | Transaction → Account |
-| HAS_POSITION (NEW) | 110 | Account → Position |
-| OF_SECURITY (NEW) | 110 | Position → Stock |
+| PERFORMS | 123 | Account → Transaction |
+| BENEFITS_TO | 123 | Transaction → Account |
+| HAS_POSITION | 110 | Account → Position |
+| OF_SECURITY | 110 | Position → Stock |
 | **TOTAL RELATIONSHIPS** | **814** | |
 
 ---
@@ -724,8 +724,8 @@ LIMIT 10
 ✅ 4 property existence constraints added
 ✅ 5 performance range indexes added
 ✅ 1 full-text search index added
-⏸️ Data re-import pending (user action)
-⏸️ Validation queries pending (after re-import)
+✅ Data import implemented (Lab 2)
+✅ Data export to lakehouse implemented (Lab 3)
 
 ---
 
@@ -779,5 +779,4 @@ LIMIT 10
 
 **Document Status**: Ready for Production
 **Schema Version**: 2.0
-**Last Validated**: 2025-10-28
-**Next Review**: After data re-import and validation
+**Last Validated**: 2025-12-12
