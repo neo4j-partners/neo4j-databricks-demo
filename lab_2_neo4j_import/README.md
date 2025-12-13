@@ -4,7 +4,7 @@ This lab reads CSV files from the Databricks volume and imports them into your N
 
 ## Running the Import
 
-### Option A: Databricks Notebook (Recommended)
+### Option A: Databricks Notebook
 
 1. In Databricks, go to **Workspace** → **Import**
 2. Upload `import_financial_data_to_neo4j.ipynb`
@@ -21,7 +21,7 @@ uv run python lab_2_neo4j_import/import_financial_data.py
 
 After importing data, explore the graph with sample queries using the Neo4j Spark Connector.
 
-### Option A: Databricks Notebook (Recommended)
+### Option A: Databricks Notebook
 
 Upload `query_samples.ipynb` to Databricks and run it. This notebook:
 - Uses Neo4j Spark Connector with pushdown optimizations

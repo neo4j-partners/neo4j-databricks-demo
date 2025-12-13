@@ -23,17 +23,52 @@ The Genie agent queries structured lakehouse tables for customer accounts, portf
    - **Data Source**: Select your catalog and schema (e.g., `neo4j_demo.raw_data`)
    - **Tables**: Include all 14 tables (7 node + 7 relationship tables)
 
-3. Add business context (recommended):
-   - Define metrics: total portfolio value, customer count, account balances
-   - Add sample questions (see below)
+3. Click **Configure** to open the configuration panel, then go to the **Instructions** tab:
+
+   **Text** (General Instructions):
+   ```
+   This data represents a retail investment platform with customers, accounts, portfolios, and transactions.
+   - Customers can have multiple accounts at different banks
+   - Positions represent stock holdings within accounts
+   - Transactions flow between accounts (source performs, target benefits)
+   - Use customer_id to join customer data across tables
+   ```
+
+   **SQL Expressions** - Click **+ Add** to define reusable business concepts:
+
+   *Measures* (aggregated metrics):
+   | Name | SQL Expression |
+   |------|----------------|
+   | Total Portfolio Value | `SUM(position.current_value)` |
+   | Account Balance | `SUM(account.balance)` |
+   | Customer Count | `COUNT(DISTINCT customer.customer_id)` |
+
+   *Filters* (common WHERE conditions):
+   | Name | SQL Expression |
+   |------|----------------|
+   | High Value Accounts | `account.balance > 100000` |
+   | Recent Transactions | `transaction.transaction_date >= CURRENT_DATE - INTERVAL 30 DAYS` |
+
+   *Dimensions* (grouping attributes):
+   | Name | SQL Expression |
+   |------|----------------|
+   | Risk Category | `customer.risk_profile` |
+   | Bank Name | `bank.name` |
+
+4. Go to the **Data** tab to configure table metadata:
+   - Add column descriptions for key fields
+   - Add synonyms (e.g., "client" for "customer", "holdings" for "position")
+   - Hide internal columns like `<id>` if they confuse users
+
+5. Add sample questions using **+ Add a sample question** on the main Genie page
 
 ### Test Queries
 
 ```
-"Show me customers with investment accounts and their total portfolio values"
-"What are the top 10 customers by account balance?"
-"Show me all technology stock positions"
-"Which customers have high risk profiles but conservative portfolios?"
+Show me customers with investment accounts and their total portfolio values
+What are the top 10 customers by account balance?
+Show me all technology stock positions
+Which customers have high risk profiles but conservative portfolios?
 ```
 
 ---

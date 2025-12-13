@@ -55,7 +55,7 @@ The notebook exports all node and relationship data as Delta tables:
 
 ## Running the Export
 
-### Option A: Databricks Notebook (Recommended)
+### Option A: Databricks Notebook
 
 1. In Databricks, go to **Workspace** → **Import**
 2. Upload `export_neo4j_to_databricks.ipynb`

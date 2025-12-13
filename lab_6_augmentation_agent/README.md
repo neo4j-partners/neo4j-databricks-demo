@@ -30,7 +30,7 @@ Find your Multi-Agent Supervisor endpoint:
 - Locate your deployed Multi-Agent Supervisor
 - Copy the endpoint name (e.g., `mas-01875d0e-endpoint`)
 
-### 2. Enable MLflow Tracing (Recommended)
+### 2. Enable MLflow Tracing
 
 MLflow tracing helps debug latency, cost, and quality issues:
 
