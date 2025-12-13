@@ -64,3 +64,9 @@ See [SAMPLE_QUERIES.md](./SAMPLE_QUERIES.md) for comprehensive examples includin
 - **Use Case Categories**: Gap analysis, risk mismatch, data quality, customer intelligence, portfolio analysis, transactions, market research, banking relationships, cross-sell, compliance
 
 - **Advanced Multi-Agent Questions**: Sophisticated queries that combine structured and unstructured data for personalized investment discovery, portfolio-profile alignment, research-driven targeting, life stage analysis, and comprehensive customer reports
+
+---
+
+## Next Steps
+
+Continue to [Lab 6: Graph Augmentation Agent](../lab_6_augmentation_agent/README.md) to use the Multi-Agent Supervisor for analyzing documents and suggesting graph enrichments.

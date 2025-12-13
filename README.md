@@ -121,6 +121,7 @@ After completing the setup steps above, proceed through the labs in order:
 | **Lab 3** | Export Neo4j graph data to Databricks Delta Lake tables | [lab_3_neo4j_to_lakehouse](./lab_3_neo4j_to_lakehouse/README.md) |
 | **Lab 4** | Create Databricks AI agents (Genie and Knowledge Agent) | [lab_4_ai_agents](./lab_4_ai_agents/README.md) |
 | **Lab 5** | Build Multi-Agent Supervisor with sample queries | [lab_5_multi_agent](./lab_5_multi_agent/README.md) |
+| **Lab 6** | Graph augmentation agent for entity extraction | [lab_6_augmentation_agent](./lab_6_augmentation_agent/README.md) |
 
 ## Project Structure
 
@@ -155,6 +156,10 @@ neo4j-databricks-demo/
 ├── lab_5_multi_agent/                     # Lab 5: Multi-Agent Supervisor
 │   ├── README.md
 │   └── SAMPLE_QUERIES.md
+├── lab_6_augmentation_agent/              # Lab 6: Graph Augmentation
+│   ├── README.md
+│   ├── augmentation_agent.py
+│   └── augmentation_agent.ipynb
 ├── scripts/
 │   └── setup_databricks_secrets.sh
 └── src/
