@@ -9,19 +9,20 @@ Usage:
     uv run python lab_3_vector_embeddings/vector_embeddings.py
 
     # With custom embedding provider
-    uv run python lab_3_vector_embeddings/vector_embeddings.py --provider openai
+    uv run python lab_3_vector_embeddings/vector_embeddings.py --provider sentence_transformers
 
     # Clear existing document graph first
     uv run python lab_3_vector_embeddings/vector_embeddings.py --clear
 
 Authentication:
     All credentials are retrieved from Databricks Secrets (scope: neo4j-creds).
-    Configure Databricks authentication via:
-    - Databricks CLI: databricks auth login --host <workspace-url>
-    - Environment: DATABRICKS_HOST and DATABRICKS_TOKEN
+    Configure Databricks authentication via .env file:
+        DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
+        DATABRICKS_TOKEN=your-token
 """
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -32,6 +33,14 @@ try:
 except NameError:
     # In Databricks notebooks, use current working directory
     PROJECT_ROOT = Path.cwd()
+
+# Load .env from project root for Databricks authentication (same as lab 1)
+from dotenv import load_dotenv
+load_dotenv(PROJECT_ROOT / ".env", override=True)
+
+# Clear conflicting auth methods - use only HOST + TOKEN from .env
+for var in ["DATABRICKS_CONFIG_PROFILE", "DATABRICKS_CLIENT_ID", "DATABRICKS_CLIENT_SECRET", "DATABRICKS_ACCOUNT_ID"]:
+    os.environ.pop(var, None)
 
 # Support both direct script execution and module execution
 try:
