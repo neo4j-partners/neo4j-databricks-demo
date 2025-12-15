@@ -1,9 +1,48 @@
 """
 Graph writer module for Lab 3: Vector Embeddings and Hybrid Search.
 
-This module handles Neo4j graph operations including index creation,
-document/chunk node writing, and relationship creation following
-neo4j-graphrag LexicalGraphConfig conventions.
+This module persists processed documents and embedded chunks to Neo4j, creating
+the graph structure required for vector and hybrid search. It follows neo4j-graphrag
+LexicalGraphConfig conventions for compatibility with the library's retrievers.
+
+Graph Structure Created:
+
+    Nodes:
+        - (Document) - Metadata about source HTML files
+        - (Chunk) - Text segments with embedding vectors
+
+    Relationships:
+        - (Chunk)-[:FROM_DOCUMENT]->(Document) - Links chunks to their source
+        - (Chunk)-[:NEXT_CHUNK]->(Chunk) - Maintains document reading order
+        - (Document)-[:DESCRIBES]->(Customer) - Connects customer profiles to Customer nodes
+
+    Indexes:
+        - Vector index on Chunk.embedding (cosine similarity)
+        - Full-text index on Chunk.text (Lucene-based keyword search)
+
+Key Classes:
+    - GraphWriter: Low-level Neo4j operations (create indexes, write nodes, etc.)
+    - write_document_graph(): High-level convenience function for full pipeline
+
+GraphWriter Methods:
+    - create_indexes(): Set up vector and full-text indexes
+    - create_constraints(): Ensure unique document_id and chunk_id
+    - write_documents(): Create/update Document nodes
+    - write_chunks(): Create/update Chunk nodes with embeddings
+    - create_document_chunk_relationships(): Link chunks to documents
+    - create_next_chunk_relationships(): Link sequential chunks
+    - create_describes_relationships(): Link customer profiles to Customer nodes
+    - get_graph_stats(): Count nodes and relationships
+    - clear_document_graph(): Remove all document/chunk data for re-processing
+
+Usage Example:
+    results = write_document_graph(
+        neo4j_config=neo4j_config,
+        documents=documents,
+        chunks=embedded_chunks,
+        embedding_dimensions=1024,
+        clear_existing=True,
+    )
 """
 
 import time

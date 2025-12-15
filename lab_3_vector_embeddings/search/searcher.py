@@ -1,9 +1,42 @@
 """
 Search module for Lab 3: Vector Embeddings and Hybrid Search.
 
-This module provides vector, full-text, and hybrid search capabilities
-using neo4j-graphrag retrievers (VectorRetriever, HybridRetriever,
-VectorCypherRetriever, HybridCypherRetriever).
+This module provides multiple search strategies over the document graph, using
+neo4j-graphrag retrievers to find relevant text chunks. It demonstrates the
+power of combining vector similarity with graph traversal for enhanced retrieval.
+
+Search Types Available:
+
+1. **Vector Search** (vector_search):
+   - Pure semantic similarity using embedding vectors
+   - Best for: Natural language queries, conceptual questions
+   - Example: "What are good investment strategies for retirement?"
+
+2. **Full-text Search** (fulltext_search):
+   - Keyword-based search using Neo4j's Lucene full-text index
+   - Best for: Exact term matching, specific entity names, technical terms
+   - Example: "renewable energy" or "John Smith"
+
+3. **Hybrid Search** (hybrid_search):
+   - Combines vector and full-text search with configurable ranking
+   - Rankers: NAIVE (interleaved results) or LINEAR (weighted combination)
+   - Best for: General-purpose search balancing semantics and keywords
+
+4. **Graph-Aware Search** (vector_search_with_graph_traversal, hybrid_search_with_graph_traversal):
+   - Extends search results by traversing graph relationships
+   - Returns related Customer, Company, and Stock nodes connected to found chunks
+   - Uses VectorCypherRetriever/HybridCypherRetriever with custom retrieval queries
+   - Best for: Context enrichment, finding related entities
+
+Key Classes:
+    - DocumentSearcher: Main search interface with lazy-initialized retrievers
+    - create_searcher(): Factory function for creating searcher instances
+
+Usage Example:
+    searcher = create_searcher(neo4j_config, embedder, index_config)
+    results = searcher.hybrid_search("portfolio diversification", SearchConfig(top_k=10))
+    graph_results = searcher.vector_search_with_graph_traversal("customer investments")
+    searcher.close()
 """
 
 from typing import Optional

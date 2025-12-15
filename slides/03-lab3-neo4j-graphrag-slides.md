@@ -129,28 +129,17 @@ The LLM now has the context to identify the gap.
 
 ---
 
-## Three Retrieval Patterns
-
-GraphRAG enables three retrieval patterns:
-
-| Pattern | What It Does |
-|---------|--------------|
-| **Vector search** | Find semantically similar content |
-| **Graph traversal** | Follow relationships to connected entities |
-| **Database queries** | Answer precise questions about entities |
-
-The combination is more powerful than any single approach.
-
----
-
 ## The neo4j-graphrag Python Package
 
 The official Neo4j GenAI package for Python provides first-party support for building GraphRAG applications.
 
-**Key benefits:**
-- Long-term support and fast feature deployment
-- Reduces hallucinations through domain-specific context
-- Combines knowledge graphs with LLMs
+**The package provides:**
+- **Text splitters** for chunking documents with configurable overlap
+- **Embedding integrations** for OpenAI, Vertex AI, Sentence Transformers, and more
+- **Index management** for creating and populating vector and full-text indexes
+- **Retrievers** for vector, hybrid, and graph-aware search patterns
+- **LLM integrations** for OpenAI, Anthropic, Vertex AI, MistralAI, Cohere, and Ollama
+- **GraphRAG orchestration** combining retrieval, augmentation, and generation
 
 ---
 

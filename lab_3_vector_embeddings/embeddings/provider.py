@@ -1,15 +1,35 @@
 """
 Embedding provider module for Lab 3: Vector Embeddings and Hybrid Search.
 
-This module provides embedding generation using neo4j-graphrag Embedder interface
-with support for two providers:
+This module generates vector embeddings for text chunks, enabling semantic similarity
+search. It implements the neo4j-graphrag Embedder interface for compatibility with
+the library's retrievers.
 
-1. **Sentence Transformers** (local): No API key required, runs locally
-   - Model: all-MiniLM-L6-v2 (384 dimensions)
+Supported Providers:
 
-2. **Databricks Foundation Models** (cloud): Uses Databricks authentication
-   - Model: databricks-gte-large-en (1024 dimensions, 8192 token context)
-   - Model: databricks-bge-large-en (1024 dimensions, 512 token context)
+1. **Sentence Transformers** (local, default for development):
+   - Model: all-MiniLM-L6-v2
+   - Dimensions: 384
+   - No API key required, runs entirely on local CPU/GPU
+   - Best for: Local development, testing, offline environments
+
+2. **Databricks Foundation Models** (cloud, recommended for production):
+   - Model: databricks-gte-large-en (recommended)
+   - Dimensions: 1024
+   - Context: 8192 tokens (handles longer text chunks)
+   - Authentication: Uses Databricks SDK (token from .env or CLI profile)
+   - Best for: Production workloads, higher quality embeddings
+
+Key Functions:
+    - create_embedder(): Factory function to instantiate the correct provider
+    - embed_chunks(): Batch embed all chunks, returning chunks with embedding vectors
+    - validate_embeddings(): Verify all chunks have valid embedding dimensions
+    - get_default_config_for_provider(): Get recommended settings for each provider
+
+Usage Example:
+    config = get_default_config_for_provider(EmbeddingProvider.DATABRICKS)
+    embedder = create_embedder(config)
+    embedded_chunks = embed_chunks(chunks, embedder)
 
 Reference: https://docs.databricks.com/en/machine-learning/model-serving/query-embedding-models
 """

@@ -1,8 +1,35 @@
 """
 Document processing module for Lab 3: Vector Embeddings and Hybrid Search.
 
-This module handles HTML parsing, text extraction, document classification,
-and text chunking using neo4j-graphrag FixedSizeSplitter.
+This module transforms raw HTML documents into structured, searchable chunks ready
+for vector embedding. It handles the first stage of the RAG pipeline: document
+ingestion and preparation.
+
+Processing Pipeline:
+    1. HTML Parsing: Extract clean text from HTML using BeautifulSoup
+    2. Document Classification: Identify document type based on filename patterns
+    3. Entity Extraction: Find references to customers, companies, and stock tickers
+    4. Text Chunking: Split documents into overlapping segments using neo4j-graphrag
+       FixedSizeSplitter for optimal retrieval
+
+Key Functions:
+    - process_html_file(): Process a single HTML file from disk
+    - process_html_content(): Process HTML string content directly
+    - chunk_document_sync(): Split a document into chunks (sync wrapper)
+    - process_documents_sync(): Batch process multiple documents (sync wrapper)
+
+Document Types Supported:
+    - Customer profiles (customer_profile_*.html)
+    - Company analysis reports (company_analysis_*.html)
+    - Quarterly reports (company_quarterly_report_*.html)
+    - Bank profiles and branches
+    - Investment guides and market analysis
+    - Regulatory/compliance documents
+
+Async Support:
+    The core functions are async (chunk_document, process_documents) to work with
+    neo4j-graphrag's async API. Sync wrappers handle event loop management for
+    both regular Python and Databricks/Jupyter environments.
 """
 
 import asyncio

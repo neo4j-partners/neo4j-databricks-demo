@@ -1,8 +1,31 @@
 """
 Pydantic schemas for Lab 3: Vector Embeddings and Hybrid Search.
 
-This module defines type-safe data models for document processing, chunking,
-embedding generation, and search operations following neo4j-graphrag best practices.
+This module defines type-safe data models for the entire vector embedding pipeline,
+from document ingestion through search operations. All models use Pydantic for
+validation and follow neo4j-graphrag conventions.
+
+Data Flow Models:
+    - ProcessedDocument: Represents an HTML document after parsing and text extraction
+    - ProcessedChunk: A text segment split from a document, ready for embedding
+    - EntityMention: Tracks references to graph entities (Customer, Company, Stock) found in text
+
+Configuration Models:
+    - DocumentConfig: Settings for document source locations (Databricks volumes)
+    - ChunkConfig: Text splitting parameters (size, overlap) for FixedSizeSplitter
+    - EmbeddingConfig: Provider selection and model settings (SentenceTransformers or Databricks)
+    - Neo4jConfig: Database connection credentials
+    - IndexConfig: Vector and full-text index naming conventions
+    - SearchConfig: Query parameters (top_k, ranking strategy, alpha weights)
+
+Search Result Models:
+    - SearchResult: Single search hit with score, text, and metadata
+    - GraphTraversalResult: Search results enriched with related graph entities
+
+Enums:
+    - DocumentType: Classification of documents (customer_profile, company_analysis, etc.)
+    - EmbeddingProvider: Supported embedding backends (sentence_transformers, databricks)
+    - HybridRankerType: Ranking strategies for hybrid search (naive, linear)
 """
 
 from datetime import datetime

@@ -1,24 +1,60 @@
 """
 Vector Embeddings and Hybrid Search - Main Processing Script
 
-This script processes HTML documents from the Databricks volume, generates
-vector embeddings, stores them in Neo4j, and enables hybrid search.
+This is the main entry point for Lab 3, orchestrating the complete document
+processing pipeline from HTML ingestion through search demonstration. It ties
+together all the modular components (processing, embeddings, graph, search)
+into a cohesive workflow.
+
+Pipeline Overview:
+    Step 1 - Document Processing:
+        - Load HTML files from local directory or Databricks volume
+        - Parse HTML, extract text, classify document types
+        - Split documents into overlapping chunks using FixedSizeSplitter
+
+    Step 2 - Embedding Generation:
+        - Initialize embedding provider (SentenceTransformers or Databricks)
+        - Generate vector embeddings for all chunks
+        - Validate embedding dimensions match configuration
+
+    Step 3 - Neo4j Graph Writing:
+        - Create vector and full-text indexes
+        - Write Document and Chunk nodes with embeddings
+        - Create relationships (FROM_DOCUMENT, NEXT_CHUNK, DESCRIBES)
+
+    Step 4 - Search Demonstration:
+        - Run sample queries showing vector, full-text, and hybrid search
+        - Demonstrate graph-aware retrieval with entity traversal
 
 Usage:
     # Local development (reads from local data/html directory)
     uv run python lab_3_vector_embeddings/vector_embeddings.py
 
-    # With custom embedding provider
+    # Use local embeddings (no Databricks API needed, 384 dims)
     uv run python lab_3_vector_embeddings/vector_embeddings.py --provider sentence_transformers
 
-    # Clear existing document graph first
+    # Use Databricks embeddings (requires auth, 1024 dims, better quality)
+    uv run python lab_3_vector_embeddings/vector_embeddings.py --provider databricks
+
+    # Clear existing document graph before processing
     uv run python lab_3_vector_embeddings/vector_embeddings.py --clear
 
+    # Skip the search demo at the end
+    uv run python lab_3_vector_embeddings/vector_embeddings.py --skip-demo
+
+    # Use custom HTML directory
+    uv run python lab_3_vector_embeddings/vector_embeddings.py --html-dir /path/to/html
+
 Authentication:
-    All credentials are retrieved from Databricks Secrets (scope: neo4j-creds).
+    Neo4j credentials are retrieved from Databricks Secrets (scope: neo4j-creds).
     Configure Databricks authentication via .env file:
         DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
         DATABRICKS_TOKEN=your-token
+
+    Required secrets in 'neo4j-creds' scope:
+        - url: Neo4j connection URI (neo4j+s://...)
+        - username: Neo4j username (typically 'neo4j')
+        - password: Neo4j password
 """
 
 import argparse
@@ -26,6 +62,14 @@ import os
 import sys
 import time
 from pathlib import Path
+
+# =============================================================================
+# INDEX CONFIGURATION CONSTANTS
+# =============================================================================
+# These index names must match across all components (graph writer, searcher)
+# Change these values if you need different index names in your Neo4j database
+VECTOR_INDEX_NAME = "chunk_embedding_index"
+FULLTEXT_INDEX_NAME = "chunk_text_index"
 
 # Handle Databricks environment where __file__ is not defined
 try:
@@ -489,7 +533,10 @@ def main() -> None:
     chunk_config = ChunkConfig()
     print(f"  [OK] Chunk config: size={chunk_config.chunk_size}, overlap={chunk_config.chunk_overlap}")
 
-    index_config = IndexConfig()
+    index_config = IndexConfig(
+        vector_index_name=VECTOR_INDEX_NAME,
+        fulltext_index_name=FULLTEXT_INDEX_NAME,
+    )
     print(f"  [OK] Index config: vector={index_config.vector_index_name}, fulltext={index_config.fulltext_index_name}")
 
     # Load HTML files
