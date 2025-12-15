@@ -219,6 +219,37 @@ splitter = FixedSizeSplitter(chunk_size=4000, chunk_overlap=200)
 
 ---
 
+## Document Processing Pipeline
+
+The pipeline transforms HTML documents into searchable chunks:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   HTML File     │ ──► │   Plain Text    │ ──► │  Chunks         │ ──► Neo4j
+│   (raw markup)  │     │   (extracted)   │     │  (~4000 chars)  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+**Step 1:** Parse HTML, strip tags, extract clean text
+**Step 2:** Split text into overlapping chunks
+**Step 3:** Store chunks as `(:Chunk)` nodes with `text` property
+
+Both vector and full-text search query the **chunks**, not the original HTML.
+
+---
+
+## What Gets Indexed
+
+| Node | Indexed Property | Index Type | Purpose |
+|------|------------------|------------|---------|
+| `Chunk` | `embedding` | Vector | Semantic similarity search |
+| `Chunk` | `text` | Full-text (Lucene) | Keyword matching |
+
+The `(:Document)` node stores only **metadata** (title, filename, type).
+The actual searchable content lives in `(:Chunk)` nodes.
+
+---
+
 ## Creating Indexes
 
 **Vector Index** for semantic similarity search:

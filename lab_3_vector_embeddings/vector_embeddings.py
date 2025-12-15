@@ -26,7 +26,12 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent
+# Handle Databricks environment where __file__ is not defined
+try:
+    PROJECT_ROOT = Path(__file__).parent.parent
+except NameError:
+    # In Databricks notebooks, use current working directory
+    PROJECT_ROOT = Path.cwd()
 
 # Support both direct script execution and module execution
 try:
