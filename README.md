@@ -231,3 +231,21 @@ The notebooks expect a `neo4j-creds` secret scope with:
 | `password` | Neo4j password | `your_password` |
 | `url` | Neo4j connection URI | `neo4j+s://xxx.databases.neo4j.io` |
 | `volume_path` | Databricks volume path | `/Volumes/neo4j_demo/raw_data/source_files` |
+
+### Marp Slides
+
+The `slides/` directory contains [Marp](https://marp.app/) presentations for each lab.
+
+**Install Marp CLI:**
+
+```bash
+npm install -g @marp-team/marp-cli
+```
+
+**Run slides with live reload:**
+
+```bash
+marp slides --server
+```
+
+Open the displayed URL to view slides. Changes auto-refresh in the browser.

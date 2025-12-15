@@ -82,21 +82,23 @@ No custom ETL scripts. Native Spark integration.
 
 ---
 
-## The Key Insight: Graphs Map to Tables
+## The Key Insight: Graphs and Tables Are Interchangeable
 
-Any graph can be decomposed into tables:
+Graphs and tables map bidirectionally:
 
 ```
 Graph:                          Tables:
 
-(Person)-[:HAS]->(Job)    →     Person: [id, name, age]
+(Person)-[:HAS]->(Job)    ↔     Person: [id, name, age]
                                 Job: [id, title, salary]
                                 HAS: [person_id, job_id, since]
 ```
 
-- **Nodes** become rows (one table per label)
-- **Relationships** become rows with source and target columns
-- **Properties** become columns
+- **Nodes** ↔ rows (one table per label)
+- **Relationships** ↔ rows with source and target columns
+- **Properties** ↔ columns
+
+This means you can both **export graphs to tables** and **import tables into graphs**.
 
 ---
 
