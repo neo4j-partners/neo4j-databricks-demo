@@ -28,9 +28,11 @@ A retail investment graph knows:
 - The position sits in an account at First National Trust
 - TCOR is TechCore Solutions in the technology sector
 
-What the graph *cannot* answer:
+What the graph *doesn't yet capture*:
 
 > Which customers want renewable energy exposure but don't have it?
+
+The graph *could* answer this — but the intent data hasn't been extracted and connected yet.
 
 ---
 
@@ -153,27 +155,7 @@ Properties can be strings, numbers, booleans, dates, or arrays.
 }]
 ```
 
-Relationships are always stored with direction, but can be queried in either direction.
-
----
-
-## Graph Data Model: ASCII Art Notation
-
-Graphs are represented using ASCII art in documentation and Cypher:
-
-```
-(james:Customer {name: "James Anderson"})
-    │
-    ├──[:HAS_ACCOUNT]──► (acc:Account {account_id: "A001"})
-    │                         │
-    │                         └──[:HAS_POSITION {shares: 50}]──► (tcor:Stock)
-    │                                                                │
-    │                                                                └──[:IN_SECTOR]──► (tech:Sector)
-    │
-    └──[:INTERESTED_IN]──► (renewable:Sector {name: "Renewable Energy"})
-```
-
-**Pattern:** `(node)-[relationship]->(node)`
+**Pattern notation:** `(node)-[relationship]->(node)` — reads like ASCII art of the graph.
 
 ---
 
@@ -297,6 +279,33 @@ RETURN s.ticker, s.company_name
 
 ---
 
+## Cypher: Relationship Property Filtering
+
+Assign a variable to a relationship to access its properties:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)-[p:HAS_POSITION]->(s:Stock)
+WHERE p.shares > 100
+RETURN c.name, s.ticker, p.shares
+```
+
+**What it matches:**
+```
+(Customer)--[:HAS_ACCOUNT]-->(Account)--[p:HAS_POSITION]-->(Stock)
+                                         where p.shares > 100
+```
+
+**What it returns:** Only positions where the customer holds more than 100 shares.
+
+| c.name | s.ticker | p.shares |
+|--------|----------|----------|
+| Sarah Chen | ECOP | 150 |
+| James Anderson | MOBD | 200 |
+
+Use `[p:HAS_POSITION]` to bind the relationship to variable `p`, then filter with `WHERE p.property`.
+
+---
+
 ## Cypher: Variable-Length Paths
 
 Match paths of varying length with `*min..max`:
@@ -317,6 +326,132 @@ RETURN c.name, s.name
 - `(Customer)-[:HAS_ACCOUNT]->()-[:HAS_POSITION]->()-[:IN_SECTOR]->(Sector)` — 3 hops
 
 Variable-length paths are powerful for discovering indirect connections.
+
+---
+
+## Cypher: Aggregation with COUNT
+
+Count results using the `count()` function:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)
+RETURN c.name, count(a) AS num_accounts
+```
+
+**What it returns:** The number of accounts each customer has.
+
+| c.name | num_accounts |
+|--------|--------------|
+| James Anderson | 2 |
+| Sarah Chen | 1 |
+
+Count all matches:
+```cypher
+MATCH (s:Stock)
+RETURN count(s) AS total_stocks
+```
+
+---
+
+## Cypher: Aggregation with SUM
+
+Sum numeric values using the `sum()` function:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)-[p:HAS_POSITION]->(s:Stock)
+WHERE c.name = "James Anderson"
+RETURN sum(p.shares) AS total_shares, sum(p.shares * s.price) AS portfolio_value
+```
+
+**What it returns:** Total shares and portfolio value across all positions.
+
+| total_shares | portfolio_value |
+|--------------|-----------------|
+| 350 | 52,450.00 |
+
+Other aggregation functions: `avg()`, `min()`, `max()`, `collect()`
+
+---
+
+## Cypher: Grouping with Aggregation
+
+Combine grouping columns with aggregation:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a)-[p:HAS_POSITION]->(s:Stock)-[:IN_SECTOR]->(sec:Sector)
+RETURN c.name, sec.name AS sector, sum(p.shares) AS shares_in_sector
+```
+
+**What it returns:** Shares per sector for each customer.
+
+| c.name | sector | shares_in_sector |
+|--------|--------|------------------|
+| James Anderson | Technology | 300 |
+| James Anderson | Healthcare | 50 |
+| Sarah Chen | Renewable Energy | 150 |
+
+Non-aggregated columns in RETURN become grouping columns (like SQL GROUP BY).
+
+---
+
+## Cypher: Pipelining with WITH
+
+`WITH` passes results from one query part to the next — like a pipe:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)
+WITH c, count(a) AS num_accounts
+RETURN c.name, num_accounts
+```
+
+**How it works:**
+1. `MATCH` finds all customer-account pairs
+2. `WITH` groups by customer and counts accounts
+3. `RETURN` outputs the final results
+
+Think of `WITH` as creating an intermediate result set to work with.
+
+---
+
+## Cypher: Chaining Operations with WITH
+
+Chain multiple operations together:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)-[p:HAS_POSITION]->(s:Stock)
+WITH c, sum(p.shares * s.price) AS portfolio_value
+WITH c, portfolio_value,
+     CASE WHEN portfolio_value > 50000 THEN "high" ELSE "standard" END AS tier
+RETURN c.name, portfolio_value, tier
+```
+
+**What it does:**
+1. Calculate portfolio value per customer
+2. Add a tier classification based on value
+3. Return the enriched result
+
+Each `WITH` transforms the data for the next stage.
+
+---
+
+## Cypher: Filter After Aggregation
+
+Use `WITH` to filter results after aggregation:
+
+```cypher
+MATCH (c:Customer)-[:HAS_ACCOUNT]->(a:Account)-[p:HAS_POSITION]->(s:Stock)
+WITH c, count(DISTINCT s) AS num_stocks
+WHERE num_stocks >= 3
+RETURN c.name, num_stocks
+```
+
+**What it returns:** Only customers holding 3 or more different stocks.
+
+| c.name | num_stocks |
+|--------|------------|
+| James Anderson | 4 |
+
+**Why WITH?** You can't use `WHERE` on aggregated values directly — `WITH` creates an intermediate result you can filter.
 
 ---
 
