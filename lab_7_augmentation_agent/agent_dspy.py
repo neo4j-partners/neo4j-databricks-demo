@@ -227,7 +227,12 @@ def main() -> tuple[DSPyGraphAugmentationAgent, AugmentationResponse]:
     )
 
     # Query the MAS for gap analysis between structured data and documents
+    print("\n" + "=" * 60)
+    print("STEP 1: QUERYING MULTI-AGENT SUPERVISOR FOR GAP ANALYSIS")
+    print("=" * 60)
     gap_analysis = fetch_gap_analysis(MAS_ENDPOINT_NAME)
+    print(f"\n  Gap analysis snippet ({len(gap_analysis)} chars total):")
+    print(f"  {gap_analysis[:200]}...")
 
     # Run DSPy analyses to convert gaps into structured enrichment proposals
     print("\n" + "=" * 60)
