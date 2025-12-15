@@ -38,16 +38,19 @@ table { font-size: 20px; }
 
 ## The Goal
 
-Use the Multi-Agent Supervisor to **analyze documents** and **suggest graph enrichments**.
+Build a **DSPy Agent** that uses the Multi-Agent Supervisor to **analyze documents** and **suggest graph enrichments**.
 
-| Analysis Type | What It Finds |
-|--------------|---------------|
-| **Investment Themes** | Emerging trends in market research |
-| **New Entities** | Node types missing from schema |
-| **Missing Attributes** | Properties mentioned but not captured |
-| **Implied Relationships** | Connections in documents but not in graph |
+```
+┌──────────────────┐      ┌─────────────────────────┐      ┌──────────────────┐
+│   Documents      │  →   │   DSPy Agent            │  →   │  Structured      │
+│   (HTML/Text)    │      │   + Multi-Agent         │      │  Suggestions     │
+│                  │      │     Supervisor          │      │  (Pydantic)      │
+└──────────────────┘      └─────────────────────────┘      └──────────────────┘
+```
 
-**Example:** Customer profiles mention "ESG investing interest" but no ESG relationship exists.
+**Why this architecture?**
+- DSPy provides type-safe structured output from LLM calls
+- Multi-Agent Supervisor routes queries to specialized agents (Genie + Knowledge)
 
 ---
 
@@ -77,19 +80,45 @@ class ImpliedRelationshipsSignature(dspy.Signature):
 
 ## DSPy Implementation
 
-**Why DSPy?** Works reliably with Multi-Agent Supervisor endpoints.
+**Why DSPy?** The key advantage is **structured output** via Pydantic models.
 
 ```python
-from lab_6_augmentation_agent.agent_dspy import run_all_analyses
+import dspy
+from pydantic import BaseModel
 
-results = run_all_analyses()
+class InvestmentTheme(BaseModel):
+    theme_name: str
+    confidence: float
+    evidence: list[str]
 
-for result in results:
-    if result.success:
-        print(f"{result.analysis_type}: {result.item_count} items")
+class ThemeSignature(dspy.Signature):
+    """Extract investment themes from documents."""
+    document: str = dspy.InputField()
+    themes: list[InvestmentTheme] = dspy.OutputField()
+
+# DSPy handles prompt generation + JSON parsing automatically
+extract = dspy.Predict(ThemeSignature)
+result = extract(document="...")  # Returns typed Pydantic objects!
 ```
 
-**Output:** Structured suggestions for graph schema improvements based on document analysis.
+**Result:** Provides reliable structured output from Multi-Agent Supervisor - no manual JSON parsing.
+
+---
+
+## What the Lab Creates
+
+The DSPy Agent performs **four types of analysis** on your documents:
+
+| Analysis Type | What It Finds |
+|--------------|---------------|
+| **Investment Themes** | Emerging trends in market research |
+| **New Entities** | Node types missing from schema |
+| **Missing Attributes** | Properties mentioned but not captured |
+| **Implied Relationships** | Connections in documents but not in graph |
+
+**Example:** Customer profiles mention "ESG investing interest" but no ESG relationship exists in the graph.
+
+Each analysis returns **typed Pydantic objects** with structured suggestions for graph improvements.
 
 ---
 

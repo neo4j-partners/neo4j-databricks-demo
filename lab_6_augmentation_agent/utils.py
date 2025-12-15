@@ -38,49 +38,6 @@ ANALYSIS_TYPES: Final[tuple[str, ...]] = (
     "implied_relationships",
 )
 
-# Sample document context for testing
-# In production, this would come from your Multi-Agent Supervisor
-SAMPLE_DOCUMENT_CONTEXT: Final[str] = """
-Market Research Analysis - Q4 2024
-
-Investment Themes:
-1. Renewable Energy Transition
-   - Market size: $495 billion globally
-   - Growth projection: 15% CAGR through 2030
-   - Key sectors: Solar, Wind, Battery Storage
-   - Key companies: Tesla, NextEra Energy, Vestas
-
-2. AI/ML Infrastructure
-   - Explosive growth in compute demand
-   - Data center investments surging
-   - Key players: NVIDIA, AMD, Microsoft Azure
-
-Customer Profile Data:
-- Customer ID: C-12345
-- Name: John Smith
-- Occupation: Software Engineer at TechCorp
-- Annual Income: $185,000
-- Investment Goals: Retirement planning, children's education fund
-- Risk Tolerance: Moderate
-- Interests: Technology stocks, ESG investing, Real estate
-- Life Stage: Mid-career with young family
-- Preferred Communication: Email, Mobile app
-
-Entity Relationships Observed:
-- John Smith WORKS_AT TechCorp
-- John Smith HAS_GOAL "Retirement by 60"
-- John Smith HAS_GOAL "College fund for kids"
-- John Smith INTERESTED_IN "ESG Investing"
-- John Smith SIMILAR_TO customers with tech backgrounds and moderate risk
-
-Missing from current graph:
-- Customer occupation details
-- Investment goals as separate nodes
-- Interest categories
-- Life stage classification
-- Risk tolerance scoring
-"""
-
 
 def _get_confidence_str(confidence: ConfidenceLevel | str) -> str:
     """Extract confidence string from ConfidenceLevel enum or string."""

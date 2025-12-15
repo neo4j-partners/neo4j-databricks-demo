@@ -48,9 +48,9 @@ from lab_6_augmentation_agent.dspy_modules.analyzers import (
 )
 from lab_6_augmentation_agent.utils import (
     ANALYSIS_TYPES,
-    SAMPLE_DOCUMENT_CONTEXT,
     print_response_summary,
 )
+from lab_6_augmentation_agent.dspy_modules.mas_client import fetch_gap_analysis
 
 # =============================================================================
 # CONFIGURATION - Update these values as needed
@@ -226,12 +226,11 @@ def main() -> tuple[DSPyGraphAugmentationAgent, AugmentationResponse]:
         enable_tracing=True,
     )
 
-    # Use sample document context
-    document_context = SAMPLE_DOCUMENT_CONTEXT
-    print("\n[INFO] Using sample document context for analysis")
+    # Query the MAS for gap analysis between structured data and documents
+    gap_analysis = fetch_gap_analysis(MAS_ENDPOINT_NAME)
 
-    # Run all analyses
-    response = agent.run_all_analyses(document_context)
+    # Run all analyses on the gap analysis results
+    response = agent.run_all_analyses(gap_analysis)
     print_response_summary(response)
 
     return agent, response
