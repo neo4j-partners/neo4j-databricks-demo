@@ -28,22 +28,25 @@ Pipeline Overview:
 
 Usage:
     # Local development (reads from local data/html directory)
-    uv run python lab_3_vector_embeddings/vector_embeddings.py
+    uv run python -m lab_3_vector_embeddings.vector_embeddings
 
     # Use local embeddings (no Databricks API needed, 384 dims)
-    uv run python lab_3_vector_embeddings/vector_embeddings.py --provider sentence_transformers
+    uv run python -m lab_3_vector_embeddings.vector_embeddings --provider sentence_transformers
 
     # Use Databricks embeddings (requires auth, 1024 dims, better quality)
-    uv run python lab_3_vector_embeddings/vector_embeddings.py --provider databricks
+    uv run python -m lab_3_vector_embeddings.vector_embeddings --provider databricks
 
     # Clear existing document graph before processing
-    uv run python lab_3_vector_embeddings/vector_embeddings.py --clear
+    uv run python -m lab_3_vector_embeddings.vector_embeddings --clear
 
     # Skip the search demo at the end
-    uv run python lab_3_vector_embeddings/vector_embeddings.py --skip-demo
+    uv run python -m lab_3_vector_embeddings.vector_embeddings --skip-demo
+
+    # Run only the search demos (skip document processing)
+    uv run python -m lab_3_vector_embeddings.vector_embeddings --demo
 
     # Use custom HTML directory
-    uv run python lab_3_vector_embeddings/vector_embeddings.py --html-dir /path/to/html
+    uv run python -m lab_3_vector_embeddings.vector_embeddings --html-dir /path/to/html
 
 Authentication:
     Neo4j credentials are retrieved from Databricks Secrets (scope: neo4j-creds).
@@ -521,10 +524,12 @@ def run_search_demo(
             print()
 
         # Demo query 4: Graph-aware search
-        print("\n[Demo 4] Graph-Aware Search: 'portfolio diversification'")
+        # Uses a query targeting customer profiles to demonstrate graph traversal
+        # (Document->DESCRIBES->Customer relationships exist for customer profiles)
+        print("\n[Demo 4] Graph-Aware Search: 'customer investment profile bank'")
         print("-" * 50)
         graph_result = searcher.vector_search_with_graph_traversal(
-            "portfolio diversification"
+            "customer investment profile bank"
         )
         print(f"  Found {len(graph_result.search_results)} chunks")
         print(f"  Related customers: {len(graph_result.related_customers)}")
@@ -533,9 +538,22 @@ def run_search_demo(
 
         if graph_result.related_customers:
             print("\n  Connected Customers:")
-            for customer in graph_result.related_customers[:3]:
+            for customer in graph_result.related_customers[:5]:
                 name = f"{customer.get('first_name', '')} {customer.get('last_name', '')}"
                 print(f"    - {name.strip()}")
+
+        if graph_result.related_companies:
+            print("\n  Connected Companies (via customer portfolios):")
+            for company in graph_result.related_companies[:5]:
+                name = company.get('name', 'Unknown')
+                print(f"    - {name}")
+
+        if graph_result.related_stocks:
+            print("\n  Connected Stocks (via customer portfolios):")
+            for stock in graph_result.related_stocks[:5]:
+                ticker = stock.get('ticker', 'Unknown')
+                name = stock.get('name', '')
+                print(f"    - {ticker}" + (f" ({name})" if name else ""))
 
     finally:
         searcher.close()
@@ -562,6 +580,11 @@ def main() -> None:
         "--skip-demo",
         action="store_true",
         help="Skip search demonstration",
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Run only the search demonstration (skip document processing)",
     )
     parser.add_argument(
         "--html-dir",
@@ -615,6 +638,15 @@ def main() -> None:
         fulltext_index_name=FULLTEXT_INDEX_NAME,
     )
     print(f"  [OK] Index config: vector={index_config.vector_index_name}, fulltext={index_config.fulltext_index_name}")
+
+    # Demo-only mode: skip document processing and run search demo directly
+    if args.demo:
+        print("\n[DEMO MODE] Skipping document processing, running search demos only...")
+        run_search_demo(neo4j_config, embedding_config, index_config)
+        print("\n" + "=" * 70)
+        print("DEMO COMPLETE")
+        print("=" * 70)
+        return
 
     # Load HTML files
     print("\n[2/4] Loading HTML files...")

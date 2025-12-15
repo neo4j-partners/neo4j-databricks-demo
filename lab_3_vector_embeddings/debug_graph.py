@@ -256,6 +256,63 @@ def main():
                 print(f"       Companies: {record['companies']}")
                 print(f"       Stocks: {record['stocks']}")
 
+        # 14. Check for duplicate chunks (same text)
+        print("\n" + "-" * 50)
+        print("14. CHECK FOR DUPLICATE CHUNKS")
+        print("-" * 50)
+        result = session.run("""
+            MATCH (c:Chunk)
+            WITH c.text AS text, count(*) AS cnt
+            WHERE cnt > 1
+            RETURN left(text, 80) AS text_preview, cnt
+            ORDER BY cnt DESC
+            LIMIT 5
+        """)
+        records = list(result)
+        if records:
+            for record in records:
+                print(f"   {record['cnt']}x: {record['text_preview']}...")
+        else:
+            print("   No duplicate chunks found")
+
+        # 15. Check chunk count per document
+        print("\n" + "-" * 50)
+        print("15. CHUNKS PER DOCUMENT")
+        print("-" * 50)
+        result = session.run("""
+            MATCH (c:Chunk)-[:FROM_DOCUMENT]->(d:Document)
+            RETURN d.title AS doc, count(c) AS chunks
+            ORDER BY chunks DESC
+            LIMIT 10
+        """)
+        for record in result:
+            print(f"   {record['doc']}: {record['chunks']} chunks")
+
+        # 16. List all Company names
+        print("\n" + "-" * 50)
+        print("16. ALL COMPANY NAMES")
+        print("-" * 50)
+        result = session.run("""
+            MATCH (c:Company)
+            RETURN c.name AS name
+            ORDER BY name
+            LIMIT 20
+        """)
+        for record in result:
+            print(f"   {record['name']}")
+
+        # 17. List all Document titles
+        print("\n" + "-" * 50)
+        print("17. ALL DOCUMENT TITLES")
+        print("-" * 50)
+        result = session.run("""
+            MATCH (d:Document)
+            RETURN d.title AS title
+            ORDER BY title
+        """)
+        for record in result:
+            print(f"   {record['title']}")
+
     driver.close()
     print("\n" + "=" * 70)
     print("DIAGNOSTIC COMPLETE")

@@ -88,6 +88,47 @@ def _record_to_search_result(record: neo4j.Record) -> SearchResult:
     )
 
 
+def _collect_entities(
+    record: neo4j.Record,
+    seen_customers: set[str],
+    seen_companies: set[str],
+    seen_stocks: set[str],
+    all_customers: list[dict],
+    all_companies: list[dict],
+    all_stocks: list[dict],
+) -> None:
+    """Collect unique entities from a record using set-based deduplication.
+
+    Modifies the lists and sets in place for efficiency.
+    """
+    # Collect customers (via Document -> DESCRIBES -> Customer path)
+    for customer in record.get("customers", []):
+        if customer and hasattr(customer, "items"):
+            customer_dict = dict(customer.items())
+            customer_id = customer_dict.get("customer_id", "")
+            if customer_id and customer_id not in seen_customers:
+                seen_customers.add(customer_id)
+                all_customers.append(customer_dict)
+
+    # Collect companies (via Customer -> Account -> Position -> Stock -> Company path)
+    for company in record.get("companies", []):
+        if company and hasattr(company, "items"):
+            company_dict = dict(company.items())
+            company_id = company_dict.get("company_id", "")
+            if company_id and company_id not in seen_companies:
+                seen_companies.add(company_id)
+                all_companies.append(company_dict)
+
+    # Collect stocks (via Customer -> Account -> Position -> Stock path)
+    for stock in record.get("stocks", []):
+        if stock and hasattr(stock, "items"):
+            stock_dict = dict(stock.items())
+            stock_id = stock_dict.get("stock_id", "")
+            if stock_id and stock_id not in seen_stocks:
+                seen_stocks.add(stock_id)
+                all_stocks.append(stock_dict)
+
+
 class DocumentSearcher:
     """Unified search interface for document chunks.
 
@@ -216,10 +257,10 @@ class DocumentSearcher:
             List of SearchResult objects ordered by relevance score.
         """
         config = config or SearchConfig()
-        chunk_label = self.index_config.chunk_label
 
         # Direct Cypher query for full-text search
-        cypher = f"""
+        # Note: Full-text index already constrains to the correct label (Chunk)
+        cypher = """
         CALL db.index.fulltext.queryNodes($index_name, $query)
         YIELD node, score
         WITH node, score
@@ -301,26 +342,18 @@ class DocumentSearcher:
             GraphTraversalResult with search results and related entities.
         """
         config = config or SearchConfig()
-        chunk_label = self.index_config.chunk_label
 
-        # Retrieval query that traverses to related entities through multiple paths:
-        # 1. Chunk -> Document -> Customer (via DESCRIBES)
-        # 2. Find companies mentioned by name in document title/text
-        # 3. Find stocks via company relationships
-        retrieval_query = f"""
+        # Retrieval query that traverses to related entities through graph paths:
+        # Path: Chunk -> Document -> Customer -> Account -> Position -> Stock -> Company
+        # This finds what stocks/companies the customer (from the document) actually invests in
+        retrieval_query = """
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
-
-        // Path 1: Document -> Customer (for customer profiles)
         OPTIONAL MATCH (d)-[:DESCRIBES]->(customer:Customer)
-
-        // Path 2: Find companies whose name appears in document title
-        OPTIONAL MATCH (company:Company)
-        WHERE d.title CONTAINS company.name
-
-        // Path 3: Find stocks for matched companies
-        OPTIONAL MATCH (stock:Stock)-[:OF_COMPANY]->(company)
-
+        OPTIONAL MATCH (customer)-[:HAS_ACCOUNT]->(acct:Account)
+                       -[:HAS_POSITION]->(pos:Position)
+                       -[:OF_SECURITY]->(stock:Stock)
+        OPTIONAL MATCH (stock)-[:OF_COMPANY]->(company:Company)
         RETURN node, score,
                d AS document,
                collect(DISTINCT customer) AS customers,
@@ -346,35 +379,17 @@ class DocumentSearcher:
         all_customers: list[dict] = []
         all_companies: list[dict] = []
         all_stocks: list[dict] = []
+        seen_customers: set[str] = set()
+        seen_companies: set[str] = set()
+        seen_stocks: set[str] = set()
 
         for record in raw_result.records:
-            # Extract search result
             result = _record_to_search_result(record)
             search_results.append(result)
-
-            # Collect related customers (via Document->DESCRIBES->Customer)
-            customers = record.get("customers", [])
-            for customer in customers:
-                if customer and hasattr(customer, "items"):
-                    customer_dict = dict(customer.items())
-                    if customer_dict not in all_customers:
-                        all_customers.append(customer_dict)
-
-            # Collect related companies (matched by name in document title)
-            companies = record.get("companies", [])
-            for company in companies:
-                if company and hasattr(company, "items"):
-                    company_dict = dict(company.items())
-                    if company_dict not in all_companies:
-                        all_companies.append(company_dict)
-
-            # Collect related stocks (via company relationship)
-            stocks = record.get("stocks", [])
-            for stock in stocks:
-                if stock and hasattr(stock, "items"):
-                    stock_dict = dict(stock.items())
-                    if stock_dict not in all_stocks:
-                        all_stocks.append(stock_dict)
+            _collect_entities(
+                record, seen_customers, seen_companies, seen_stocks,
+                all_customers, all_companies, all_stocks,
+            )
 
         return GraphTraversalResult(
             search_results=search_results,
@@ -403,24 +418,17 @@ class DocumentSearcher:
         config = config or SearchConfig()
         ranker = _ranker_from_config(config.ranker)
 
-        # Retrieval query that traverses to related entities through multiple paths:
-        # 1. Chunk -> Document -> Customer (via DESCRIBES)
-        # 2. Find companies mentioned by name in document title/text
-        # 3. Find stocks via company relationships
+        # Retrieval query that traverses to related entities through graph paths:
+        # Path: Chunk -> Document -> Customer -> Account -> Position -> Stock -> Company
+        # This finds what stocks/companies the customer (from the document) actually invests in
         retrieval_query = """
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
-
-        // Path 1: Document -> Customer (for customer profiles)
         OPTIONAL MATCH (d)-[:DESCRIBES]->(customer:Customer)
-
-        // Path 2: Find companies whose name appears in document title
-        OPTIONAL MATCH (company:Company)
-        WHERE d.title CONTAINS company.name
-
-        // Path 3: Find stocks for matched companies
-        OPTIONAL MATCH (stock:Stock)-[:OF_COMPANY]->(company)
-
+        OPTIONAL MATCH (customer)-[:HAS_ACCOUNT]->(acct:Account)
+                       -[:HAS_POSITION]->(pos:Position)
+                       -[:OF_SECURITY]->(stock:Stock)
+        OPTIONAL MATCH (stock)-[:OF_COMPANY]->(company:Company)
         RETURN node, score,
                d AS document,
                collect(DISTINCT customer) AS customers,
@@ -452,40 +460,23 @@ class DocumentSearcher:
         all_customers: list[dict] = []
         all_companies: list[dict] = []
         all_stocks: list[dict] = []
+        seen_customers: set[str] = set()
+        seen_companies: set[str] = set()
+        seen_stocks: set[str] = set()
 
         for record in raw_result.records:
-            # Extract search result
             result = _record_to_search_result(record)
 
-            # Skip duplicates
+            # Skip duplicate chunks
             if result.chunk_id in seen_chunk_ids:
                 continue
             seen_chunk_ids.add(result.chunk_id)
             search_results.append(result)
 
-            # Collect related customers (via Document->DESCRIBES->Customer)
-            customers = record.get("customers", [])
-            for customer in customers:
-                if customer and hasattr(customer, "items"):
-                    customer_dict = dict(customer.items())
-                    if customer_dict not in all_customers:
-                        all_customers.append(customer_dict)
-
-            # Collect related companies (matched by name in document title)
-            companies = record.get("companies", [])
-            for company in companies:
-                if company and hasattr(company, "items"):
-                    company_dict = dict(company.items())
-                    if company_dict not in all_companies:
-                        all_companies.append(company_dict)
-
-            # Collect related stocks (via company relationship)
-            stocks = record.get("stocks", [])
-            for stock in stocks:
-                if stock and hasattr(stock, "items"):
-                    stock_dict = dict(stock.items())
-                    if stock_dict not in all_stocks:
-                        all_stocks.append(stock_dict)
+            _collect_entities(
+                record, seen_customers, seen_companies, seen_stocks,
+                all_customers, all_companies, all_stocks,
+            )
 
             # Stop after collecting enough unique results
             if len(search_results) >= config.top_k:

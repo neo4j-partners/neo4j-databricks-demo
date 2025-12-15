@@ -150,6 +150,44 @@ Run the setup script to create secrets from your `.env` file:
 
 This creates a `neo4j-creds` secret scope with: `username`, `password`, `url`, `volume_path`
 
+### 4. Clear Neo4j Database (Optional)
+
+If your Neo4j database has existing data from previous runs, clear it before starting the labs to avoid duplicate data:
+
+**Option A: Using the provided script (local development)**
+
+```bash
+# Preview what will be deleted (dry run)
+uv run python lab_1_databricks_upload/clear_neo4j_database.py --dry-run
+
+# Clear the database
+uv run python lab_1_databricks_upload/clear_neo4j_database.py --yes
+```
+
+**Option B: Using Neo4j Browser or Cypher**
+
+```cypher
+// Delete all nodes and relationships
+MATCH (n) DETACH DELETE n;
+
+// Drop all constraints (run SHOW CONSTRAINTS first to see names)
+DROP CONSTRAINT constraint_name IF EXISTS;
+
+// Drop all indexes (run SHOW INDEXES first to see names)
+DROP INDEX index_name IF EXISTS;
+```
+
+**Option C: Using APOC (if installed)**
+
+```cypher
+// Efficient batch deletion for large databases
+CALL apoc.periodic.iterate(
+  'MATCH (n) RETURN n',
+  'DETACH DELETE n',
+  {batchSize: 10000}
+);
+```
+
 ## Labs
 
 After completing the setup steps above, proceed through the labs in order:
@@ -185,7 +223,8 @@ neo4j-databricks-demo/
 │   └── html/                              # Customer profiles and documents
 ├── lab_1_databricks_upload/               # Lab 1: Upload to Databricks
 │   ├── README.md
-│   └── upload_to_databricks.py
+│   ├── upload_to_databricks.py
+│   └── clear_neo4j_database.py            # Utility to clear Neo4j database
 ├── lab_2_neo4j_import/                    # Lab 2: Import to Neo4j
 │   ├── README.md
 │   ├── import_financial_data_to_neo4j.ipynb

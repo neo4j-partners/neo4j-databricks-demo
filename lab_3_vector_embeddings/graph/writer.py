@@ -306,14 +306,20 @@ class GraphWriter:
     def create_next_chunk_relationships(self) -> dict[str, int]:
         """Create NEXT_CHUNK relationships between sequential chunks.
 
+        Uses a pattern that filters NULL values before the match to avoid
+        Cartesian products on missing data.
+
         Returns:
             Dictionary with count of relationships created.
         """
         chunk_label = self.index_config.chunk_label
+        # Filter c1 for valid document_id/index, then find c2 with next index
         query = f"""
         MATCH (c1:{chunk_label})
+        WHERE c1.document_id IS NOT NULL AND c1.index IS NOT NULL
+        WITH c1
         MATCH (c2:{chunk_label})
-        WHERE c1.document_id = c2.document_id
+        WHERE c2.document_id = c1.document_id
           AND c2.index = c1.index + 1
         MERGE (c1)-[r:NEXT_CHUNK]->(c2)
         RETURN count(r) AS count
