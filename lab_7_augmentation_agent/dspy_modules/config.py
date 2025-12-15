@@ -2,7 +2,7 @@
 DSPy Language Model Configuration for Databricks Multi-Agent Supervisor.
 
 This module handles the configuration of DSPy to work with Databricks
-Multi-Agent Supervisor (MAS) endpoints created in Lab 5. It supports both
+Multi-Agent Supervisor (MAS) endpoints created in Lab 6. It supports both
 automatic authentication when running on Databricks and manual authentication
 via environment variables.
 
@@ -39,7 +39,7 @@ for var in _CONFLICTING_AUTH_VARS:
     os.environ.pop(var, None)
 
 
-# Default MAS endpoint name (from Lab 5)
+# Default MAS endpoint name (from Lab 6)
 # Override via MAS_ENDPOINT_NAME environment variable if needed
 DEFAULT_ENDPOINT: Final[str] = os.environ.get("MAS_ENDPOINT_NAME", "mas-3ae5a347-endpoint")
 
@@ -76,7 +76,7 @@ class DatabricksResponsesLM(LM):
         Initialize the Databricks Responses API LM.
 
         Args:
-            model: The Databricks MAS endpoint name from Lab 5.
+            model: The Databricks MAS endpoint name from Lab 6.
             **kwargs: Additional arguments (temperature, max_tokens, etc.)
         """
         self._model_name = model
@@ -158,7 +158,7 @@ def get_lm(
     """
     Create a DSPy Language Model configured for Databricks MAS endpoint.
 
-    This function ONLY supports Multi-Agent Supervisor endpoints from Lab 5.
+    This function ONLY supports Multi-Agent Supervisor endpoints from Lab 6.
     The MAS endpoint uses the Databricks Responses API format, which requires
     a custom LM adapter (DatabricksResponsesLM).
 
@@ -167,7 +167,7 @@ def get_lm(
     - Locally: Uses DATABRICKS_HOST and DATABRICKS_TOKEN from .env
 
     Args:
-        model_name: The MAS endpoint name from Lab 5. If None, uses DEFAULT_ENDPOINT.
+        model_name: The MAS endpoint name from Lab 6. If None, uses DEFAULT_ENDPOINT.
         temperature: Sampling temperature (0.0-1.0). Lower = more deterministic.
         max_tokens: Maximum tokens in the response.
 
@@ -202,12 +202,12 @@ def configure_dspy(
     This sets up the default LM and adapter for all DSPy operations.
     Call this once at application startup.
 
-    This function ONLY supports Multi-Agent Supervisor endpoints from Lab 5:
+    This function ONLY supports Multi-Agent Supervisor endpoints from Lab 6:
     - Uses DatabricksResponsesLM (Responses API format, not OpenAI format)
     - Uses ChatAdapter (required for MAS, JSONAdapter not supported)
 
     Args:
-        model_name: The MAS endpoint name from Lab 5. If None, uses DEFAULT_ENDPOINT.
+        model_name: The MAS endpoint name from Lab 6. If None, uses DEFAULT_ENDPOINT.
         temperature: Sampling temperature (0.0-1.0).
         max_tokens: Maximum tokens in the response.
         track_usage: If True, enable token usage tracking.
@@ -216,7 +216,7 @@ def configure_dspy(
         The configured LM instance.
 
     Example:
-        >>> from lab_6_augmentation_agent.dspy_modules import configure_dspy
+        >>> from lab_7_augmentation_agent.dspy_modules import configure_dspy
         >>> lm = configure_dspy()
         >>> print(f"Configured with endpoint: {lm.model}")
     """

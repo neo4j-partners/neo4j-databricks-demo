@@ -1,4 +1,4 @@
-# Lab 3: Export Neo4j to Databricks Lakehouse
+# Lab 4: Export Neo4j to Databricks Lakehouse
 
 This lab exports graph data from Neo4j back to Databricks as Delta Lake tables, enabling integration with Databricks AI/BI tools.
 
@@ -65,7 +65,7 @@ The notebook exports all node and relationship data as Delta tables:
 ### Option B: Local Python Script
 
 ```bash
-uv run python lab_3_neo4j_to_lakehouse/export_neo4j_to_databricks.py
+uv run python lab_4_neo4j_to_lakehouse/export_neo4j_to_databricks.py
 ```
 
 ## Neo4j Spark Connector Configuration
@@ -130,4 +130,4 @@ After export, your Unity Catalog will contain:
 
 ## Next Steps
 
-Continue to [Lab 4: Create AI Agents](../lab_4_ai_agents/README.md) to set up Databricks Genie and Knowledge Agents for natural language queries.
+Continue to [Lab 5: Create AI Agents](../lab_5_ai_agents/README.md) to set up Databricks Genie and Knowledge Agents for natural language queries.

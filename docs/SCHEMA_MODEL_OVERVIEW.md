@@ -725,7 +725,7 @@ LIMIT 10
 ✅ 5 performance range indexes added
 ✅ 1 full-text search index added
 ✅ Data import implemented (Lab 2)
-✅ Data export to lakehouse implemented (Lab 3)
+✅ Data export to lakehouse implemented (Lab 4)
 
 ---
 

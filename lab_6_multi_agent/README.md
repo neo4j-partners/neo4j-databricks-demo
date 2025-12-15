@@ -1,10 +1,10 @@
-# Lab 5: Multi-Agent Supervisor
+# Lab 6: Multi-Agent Supervisor
 
 This lab combines the Genie and Knowledge Agent into a unified system that answers complex questions requiring both structured data and unstructured document analysis.
 
 ## Prerequisites
 
-- Completed [Lab 4](../lab_4_ai_agents/README.md) with both agents created:
+- Completed [Lab 5](../lab_5_ai_agents/README.md) with both agents created:
   - Retail Investment Data Assistant (Genie)
   - Customer Insights Knowledge Agent
 
@@ -63,7 +63,7 @@ Click **Configure Agents** to add your agents. You can select up to 20 different
 
 ### 4. Get Endpoint Name
 
-After creating the Multi-Agent Supervisor, click the **cloud icon** in the top right corner to view the endpoint details. Copy the endpoint name (e.g., `mas-01875d0e-endpoint`) - you'll need this in Lab 6.
+After creating the Multi-Agent Supervisor, click the **cloud icon** in the top right corner to view the endpoint details. Copy the endpoint name (e.g., `mas-01875d0e-endpoint`) - you'll need this in Lab 7.
 
 ---
 
@@ -91,4 +91,4 @@ See [SAMPLE_QUERIES.md](./SAMPLE_QUERIES.md) for comprehensive examples includin
 
 ## Next Steps
 
-Continue to [Lab 6: Graph Augmentation Agent](../lab_6_augmentation_agent/README.md) to use the Multi-Agent Supervisor for analyzing documents and suggesting graph enrichments.
+Continue to [Lab 7: Graph Augmentation Agent](../lab_7_augmentation_agent/README.md) to use the Multi-Agent Supervisor for analyzing documents and suggesting graph enrichments.

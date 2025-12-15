@@ -9,7 +9,7 @@ This guide covers running the DSPy-based Graph Augmentation Agent locally and on
 uv sync
 
 # Run all analyses
-uv run python -m lab_6_augmentation_agent.agent_dspy
+uv run python -m lab_7_augmentation_agent.agent_dspy
 ```
 
 On Databricks, use the `augmentation_dspy_agent.ipynb` notebook which runs each analysis in separate cells.
@@ -45,7 +45,7 @@ dbutils.library.restartPython()
 ## Project Structure
 
 ```
-lab_6_augmentation_agent/
+lab_7_augmentation_agent/
 ├── agent_dspy.py           # Main entry point
 ├── schemas.py              # Pydantic models for structured output
 ├── dspy_modules/
@@ -161,7 +161,7 @@ When building DSPy agents that use Databricks Multi-Agent Supervisor (MAS) endpo
 MAS endpoints use the Databricks Responses API format, not OpenAI Chat Completions. Always use the `DatabricksResponsesLM` adapter:
 
 ```python
-from lab_6_augmentation_agent.dspy_modules.config import configure_dspy
+from lab_7_augmentation_agent.dspy_modules.config import configure_dspy
 
 # This automatically uses DatabricksResponsesLM for MAS endpoints
 lm = configure_dspy(model_name="your-mas-endpoint")
@@ -330,7 +330,7 @@ Use the same code path locally and on Databricks:
 
 ```bash
 # Local testing
-uv run python -m lab_6_augmentation_agent.agent_dspy
+uv run python -m lab_7_augmentation_agent.agent_dspy
 
 # Same code runs on Databricks via notebook or IDE plugin
 ```
@@ -354,7 +354,7 @@ uv run python -m lab_6_augmentation_agent.agent_dspy
 │    └─ Custom LM adapter for Responses API format                │
 ├─────────────────────────────────────────────────────────────────┤
 │  Multi-Agent Supervisor Endpoint                                │
-│    └─ Routes to Genie + Knowledge Agent (Lab 5)                 │
+│    └─ Routes to Genie + Knowledge Agent (Lab 6)                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

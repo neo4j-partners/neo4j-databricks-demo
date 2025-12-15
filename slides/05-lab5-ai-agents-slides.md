@@ -14,7 +14,7 @@ code { font-size: 18px; }
 table { font-size: 20px; }
 </style>
 
-# Lab 4: Create AI Agents
+# Lab 5: Create AI Agents
 ## Natural Language to Data
 
 ---

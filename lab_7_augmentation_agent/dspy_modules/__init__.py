@@ -8,25 +8,25 @@ This package contains the DSPy-based components for structured output generation
 - mas_client: Client for querying the Multi-Agent Supervisor
 """
 
-from lab_6_augmentation_agent.dspy_modules.config import (
+from lab_7_augmentation_agent.dspy_modules.config import (
     configure_dspy,
     get_lm,
     setup_mlflow_tracing,
     DatabricksResponsesLM,
 )
-from lab_6_augmentation_agent.dspy_modules.mas_client import (
+from lab_7_augmentation_agent.dspy_modules.mas_client import (
     MASClient,
     GapAnalysisResult,
     fetch_gap_analysis,
 )
-from lab_6_augmentation_agent.dspy_modules.signatures import (
+from lab_7_augmentation_agent.dspy_modules.signatures import (
     InvestmentThemesSignature,
     NewEntitiesSignature,
     MissingAttributesSignature,
     ImpliedRelationshipsSignature,
     ANALYSIS_SIGNATURES,
 )
-from lab_6_augmentation_agent.dspy_modules.analyzers import (
+from lab_7_augmentation_agent.dspy_modules.analyzers import (
     InvestmentThemesResult,
     NewEntitiesResult,
     MissingAttributesResult,

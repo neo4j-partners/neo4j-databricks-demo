@@ -20,7 +20,7 @@ from typing import Final
 
 import dspy
 
-from lab_6_augmentation_agent.schemas import (
+from lab_7_augmentation_agent.schemas import (
     InvestmentThemesAnalysis,
     NewEntitiesAnalysis,
     MissingAttributesAnalysis,

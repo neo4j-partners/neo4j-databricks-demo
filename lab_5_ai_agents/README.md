@@ -1,10 +1,10 @@
-# Lab 4: Create AI Agents
+# Lab 5: Create AI Agents
 
 This lab sets up Databricks AI/BI agents to query the lakehouse data using natural language.
 
 ## Prerequisites
 
-- Completed [Lab 3](../lab_3_neo4j_to_lakehouse/README.md) to export graph data to Delta Lake tables
+- Completed [Lab 4](../lab_4_neo4j_to_lakehouse/README.md) to export graph data to Delta Lake tables
 - Access to Databricks AI/BI workspace features
 
 ---
@@ -144,7 +144,7 @@ When answering questions, cite specific details from customer profiles including
 
 ### 4. Get Endpoint Name
 
-After creating the Knowledge Agent, click the **cloud icon** in the top right corner to view the endpoint details. Copy the endpoint name (e.g., `ka-6f0994b4-endpoint`) - you'll need this in Lab 5.
+After creating the Knowledge Agent, click the **cloud icon** in the top right corner to view the endpoint details. Copy the endpoint name (e.g., `ka-6f0994b4-endpoint`) - you'll need this in Lab 6.
 
 ### Test Queries
 
@@ -160,4 +160,4 @@ Compare the investment philosophies of First National Trust and Pacific Coast Ba
 
 ## Next Steps
 
-Continue to [Lab 5: Multi-Agent Supervisor](../lab_5_multi_agent/README.md) to combine both agents into a unified system.
+Continue to [Lab 6: Multi-Agent Supervisor](../lab_6_multi_agent/README.md) to combine both agents into a unified system.

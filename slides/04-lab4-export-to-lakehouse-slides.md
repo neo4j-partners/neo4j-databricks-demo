@@ -14,7 +14,7 @@ code { font-size: 18px; }
 table { font-size: 20px; }
 </style>
 
-# Lab 3: Export Neo4j to Lakehouse
+# Lab 4: Export Neo4j to Lakehouse
 ## Bidirectional Data Flow
 
 ---

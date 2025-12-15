@@ -1,7 +1,7 @@
 """
 Multi-Agent Supervisor Client for Graph Augmentation Analysis.
 
-This module queries the Multi-Agent Supervisor (MAS) endpoint from Lab 5
+This module queries the Multi-Agent Supervisor (MAS) endpoint from Lab 6
 to perform gap analysis between structured graph data (via Genie) and
 unstructured documents (via Knowledge Agent).
 
@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT: Final[Path] = Path(__file__).parent.parent.parent
 load_dotenv(PROJECT_ROOT / ".env", override=True)
 
-# Default MAS endpoint name (from Lab 5)
+# Default MAS endpoint name (from Lab 6)
 DEFAULT_ENDPOINT: Final[str] = os.environ.get("MAS_ENDPOINT_NAME", "mas-3ae5a347-endpoint")
 
 
@@ -190,7 +190,7 @@ class MASClient:
         Initialize the MAS client.
 
         Args:
-            endpoint_name: The MAS endpoint name from Lab 5.
+            endpoint_name: The MAS endpoint name from Lab 6.
                           Uses DEFAULT_ENDPOINT if not specified.
         """
         self.endpoint_name = endpoint_name or DEFAULT_ENDPOINT
@@ -370,7 +370,7 @@ def fetch_gap_analysis(endpoint_name: str | None = None) -> str:
         Comprehensive gap analysis text for graph augmentation.
 
     Example:
-        >>> from lab_6_augmentation_agent.dspy_modules.mas_client import fetch_gap_analysis
+        >>> from lab_7_augmentation_agent.dspy_modules.mas_client import fetch_gap_analysis
         >>> analysis = fetch_gap_analysis()
         >>> print(f"Retrieved {len(analysis)} characters of gap analysis")
     """

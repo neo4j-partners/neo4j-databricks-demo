@@ -86,10 +86,10 @@ These become first-class graph data for queries and algorithms.
 ┌────────────────────────────────────────────────────────────────────┐
 │  Lab 1: Upload Data       →  CSV + HTML to Unity Catalog           │
 │  Lab 2: Import to Neo4j   →  Build the knowledge graph             │
-│  Lab 3: Export to Delta   →  Enable SQL-based agents               │
-│  Lab 4: Create Agents     →  Genie (structured) + Knowledge (docs) │
-│  Lab 5: Multi-Agent       →  Combine agents into unified system    │
-│  Lab 6: Augmentation      →  AI suggests graph enrichments         │
+│  Lab 4: Export to Delta   →  Enable SQL-based agents               │
+│  Lab 5: Create Agents     →  Genie (structured) + Knowledge (docs) │
+│  Lab 6: Multi-Agent       →  Combine agents into unified system    │
+│  Lab 7: Augmentation      →  AI suggests graph enrichments         │
 └────────────────────────────────────────────────────────────────────┘
 ```
 

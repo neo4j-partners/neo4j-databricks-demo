@@ -158,10 +158,11 @@ After completing the setup steps above, proceed through the labs in order:
 |-----|-------------|------|
 | **Lab 1** | Upload CSV and HTML files to Databricks Unity Catalog | [lab_1_databricks_upload](./lab_1_databricks_upload/README.md) |
 | **Lab 2** | Import data from Databricks into Neo4j graph database | [lab_2_neo4j_import](./lab_2_neo4j_import/README.md) |
-| **Lab 3** | Export Neo4j graph data to Databricks Delta Lake tables | [lab_3_neo4j_to_lakehouse](./lab_3_neo4j_to_lakehouse/README.md) |
-| **Lab 4** | Create Databricks AI agents (Genie and Knowledge Agent) | [lab_4_ai_agents](./lab_4_ai_agents/README.md) |
-| **Lab 5** | Build Multi-Agent Supervisor with sample queries | [lab_5_multi_agent](./lab_5_multi_agent/README.md) |
-| **Lab 6** | Graph augmentation agent for entity extraction | [lab_6_augmentation_agent](./lab_6_augmentation_agent/README.md) |
+| **Lab 3** | *(Reserved for future lab)* | — |
+| **Lab 4** | Export Neo4j graph data to Databricks Delta Lake tables | [lab_4_neo4j_to_lakehouse](./lab_4_neo4j_to_lakehouse/README.md) |
+| **Lab 5** | Create Databricks AI agents (Genie and Knowledge Agent) | [lab_5_ai_agents](./lab_5_ai_agents/README.md) |
+| **Lab 6** | Build Multi-Agent Supervisor with sample queries | [lab_6_multi_agent](./lab_6_multi_agent/README.md) |
+| **Lab 7** | Graph augmentation agent for entity extraction | [lab_7_augmentation_agent](./lab_7_augmentation_agent/README.md) |
 
 ## Project Structure
 
@@ -191,16 +192,16 @@ neo4j-databricks-demo/
 │   ├── import_financial_data.py
 │   ├── query_samples.ipynb
 │   └── query_financial_graph.py
-├── lab_3_neo4j_to_lakehouse/              # Lab 3: Export to Lakehouse
+├── lab_4_neo4j_to_lakehouse/              # Lab 4: Export to Lakehouse
 │   ├── README.md
 │   ├── export_neo4j_to_databricks.ipynb
 │   └── export_neo4j_to_databricks.py
-├── lab_4_ai_agents/                       # Lab 4: AI Agents
+├── lab_5_ai_agents/                       # Lab 5: AI Agents
 │   └── README.md
-├── lab_5_multi_agent/                     # Lab 5: Multi-Agent Supervisor
+├── lab_6_multi_agent/                     # Lab 6: Multi-Agent Supervisor
 │   ├── README.md
 │   └── SAMPLE_QUERIES.md
-├── lab_6_augmentation_agent/              # Lab 6: Graph Augmentation
+├── lab_7_augmentation_agent/              # Lab 7: Graph Augmentation
 │   ├── README.md
 │   ├── augmentation_agent.py
 │   └── augmentation_agent.ipynb

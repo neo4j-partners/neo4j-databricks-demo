@@ -70,4 +70,4 @@ RETURN relationshipType, value.count as count;
 
 ## Next Steps
 
-Continue to [Lab 3: Export Neo4j to Lakehouse](../lab_3_neo4j_to_lakehouse/README.md) to export graph data back to Databricks Delta tables.
+Continue to [Lab 4: Export Neo4j to Lakehouse](../lab_4_neo4j_to_lakehouse/README.md) to export graph data back to Databricks Delta tables.

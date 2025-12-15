@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import dspy
 
-from lab_6_augmentation_agent.schemas import (
+from lab_7_augmentation_agent.schemas import (
     InvestmentThemesAnalysis,
     NewEntitiesAnalysis,
     MissingAttributesAnalysis,
@@ -35,7 +35,7 @@ from lab_6_augmentation_agent.schemas import (
     SuggestedRelationship,
     SuggestedAttribute,
 )
-from lab_6_augmentation_agent.dspy_modules.signatures import (
+from lab_7_augmentation_agent.dspy_modules.signatures import (
     InvestmentThemesSignature,
     NewEntitiesSignature,
     MissingAttributesSignature,

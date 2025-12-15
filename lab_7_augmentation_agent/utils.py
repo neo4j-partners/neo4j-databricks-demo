@@ -13,21 +13,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from lab_6_augmentation_agent.schemas import (
+    from lab_7_augmentation_agent.schemas import (
         AugmentationResponse,
         InvestmentThemesAnalysis,
         NewEntitiesAnalysis,
         MissingAttributesAnalysis,
         ImpliedRelationshipsAnalysis,
     )
-    from lab_6_augmentation_agent.dspy_modules.analyzers import (
+    from lab_7_augmentation_agent.dspy_modules.analyzers import (
         InvestmentThemesResult,
         NewEntitiesResult,
         MissingAttributesResult,
         ImpliedRelationshipsResult,
     )
 
-from lab_6_augmentation_agent.schemas import ConfidenceLevel
+from lab_7_augmentation_agent.schemas import ConfidenceLevel
 
 
 # Analysis types available (immutable tuple for type safety)
@@ -157,7 +157,7 @@ def print_analysis_result(
         return
 
     # Import here to avoid circular imports
-    from lab_6_augmentation_agent.schemas import (
+    from lab_7_augmentation_agent.schemas import (
         InvestmentThemesAnalysis,
         NewEntitiesAnalysis,
         MissingAttributesAnalysis,

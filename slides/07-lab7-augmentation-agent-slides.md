@@ -14,7 +14,7 @@ code { font-size: 18px; }
 table { font-size: 20px; }
 </style>
 
-# Lab 6: Graph Augmentation Agent
+# Lab 7: Graph Augmentation Agent
 ## AI-Driven Schema Evolution
 
 ---

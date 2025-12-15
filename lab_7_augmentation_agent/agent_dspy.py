@@ -13,7 +13,7 @@ Key advantages over the original implementation:
 - Simpler, more maintainable code
 
 Prerequisites:
-    1. Multi-Agent Supervisor from Lab 5 deployed as a Databricks serving endpoint
+    1. Multi-Agent Supervisor from Lab 6 deployed as a Databricks serving endpoint
     2. DSPy and MLflow installed (see pyproject.toml)
     3. Authentication via one of:
        - On Databricks: Automatic (runtime provides credentials)
@@ -22,7 +22,7 @@ Prerequisites:
 Usage:
     # Run on Databricks (via IDE plugin or notebook)
     # Run locally with uv
-    uv run python -m lab_6_augmentation_agent.agent_dspy
+    uv run python -m lab_7_augmentation_agent.agent_dspy
 
 References:
     - https://docs.databricks.com/aws/en/generative-ai/dspy/
@@ -34,30 +34,30 @@ from __future__ import annotations
 
 from typing import Final
 
-from lab_6_augmentation_agent.schemas import AugmentationResponse
-from lab_6_augmentation_agent.dspy_modules.config import (
+from lab_7_augmentation_agent.schemas import AugmentationResponse
+from lab_7_augmentation_agent.dspy_modules.config import (
     configure_dspy,
     setup_mlflow_tracing,
 )
-from lab_6_augmentation_agent.dspy_modules.analyzers import (
+from lab_7_augmentation_agent.dspy_modules.analyzers import (
     GraphAugmentationAnalyzer,
     InvestmentThemesResult,
     NewEntitiesResult,
     MissingAttributesResult,
     ImpliedRelationshipsResult,
 )
-from lab_6_augmentation_agent.utils import (
+from lab_7_augmentation_agent.utils import (
     ANALYSIS_TYPES,
     print_response_summary,
 )
-from lab_6_augmentation_agent.dspy_modules.mas_client import fetch_gap_analysis
+from lab_7_augmentation_agent.dspy_modules.mas_client import fetch_gap_analysis
 
 # =============================================================================
 # CONFIGURATION - Update these values as needed
 # =============================================================================
 
 # Multi-Agent Supervisor endpoint name
-# This MUST be the MAS endpoint created in Lab 5 (lab_5_multi_agent)
+# This MUST be the MAS endpoint created in Lab 6 (lab_6_multi_agent)
 # The agent relies on the MAS to route queries to Genie + Knowledge Agent
 # Get your endpoint name from the MAS UI by clicking the cloud icon
 MAS_ENDPOINT_NAME: Final[str] = "mas-3ae5a347-endpoint"
@@ -129,7 +129,7 @@ class DSPyGraphAugmentationAgent:
         Initialize the DSPy agent.
 
         Args:
-            model_name: MAS endpoint name from Lab 5. Uses MAS_ENDPOINT_NAME if None.
+            model_name: MAS endpoint name from Lab 6. Uses MAS_ENDPOINT_NAME if None.
             temperature: Sampling temperature for the LM.
             max_tokens: Maximum tokens in LM responses.
             enable_tracing: Enable MLflow tracing for observability.
