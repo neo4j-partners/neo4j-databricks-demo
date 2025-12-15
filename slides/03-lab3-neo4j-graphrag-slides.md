@@ -121,6 +121,14 @@ The LLM now has the context to identify the gap.
 
 ---
 
+![bg contain](images/graphrag-impact-diagram.jpg)
+
+---
+
+![bg contain](images/graphrag-phases-diagram.jpg)
+
+---
+
 ## Three Retrieval Patterns
 
 GraphRAG enables three retrieval patterns:

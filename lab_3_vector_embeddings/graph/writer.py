@@ -453,12 +453,29 @@ class GraphWriter:
         return results
 
     def clear_document_graph(self) -> dict[str, int]:
-        """Remove all Document and Chunk nodes with their relationships.
+        """Remove all Document and Chunk nodes, relationships, and indexes.
+
+        This also drops vector and full-text indexes so they can be recreated
+        with the correct dimensions.
 
         Returns:
-            Dictionary with counts of deleted nodes and relationships.
+            Dictionary with counts of deleted nodes and indexes.
         """
         chunk_label = self.index_config.chunk_label
+        results: dict[str, int] = {}
+
+        # Drop indexes first (so they can be recreated with correct dimensions)
+        with self.driver.session(database=self.config.database) as session:
+            indexes_dropped = 0
+            for index_name in [self.index_config.vector_index_name, self.index_config.fulltext_index_name]:
+                try:
+                    session.run(f"DROP INDEX {index_name} IF EXISTS")
+                    indexes_dropped += 1
+                except Exception:
+                    pass  # Index might not exist
+            results["indexes_dropped"] = indexes_dropped
+
+        # Delete nodes
         query = f"""
         MATCH (n)
         WHERE n:Document OR n:{chunk_label}
@@ -469,9 +486,9 @@ class GraphWriter:
         with self.driver.session(database=self.config.database) as session:
             result = session.run(query)
             record = result.single()
-            count = record["count"] if record else 0
+            results["nodes_deleted"] = record["count"] if record else 0
 
-        return {"nodes_deleted": count}
+        return results
 
 
 def write_document_graph(
