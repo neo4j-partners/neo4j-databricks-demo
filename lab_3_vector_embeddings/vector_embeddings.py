@@ -502,7 +502,9 @@ def main() -> None:
         help="Path to HTML directory (default: data/html)",
     )
 
-    args = parser.parse_args()
+    # Use parse_known_args() to ignore extra arguments passed by Databricks kernel
+    # (e.g., -f /databricks/kernel-connections/...)
+    args, _ = parser.parse_known_args()
 
     print("=" * 70)
     print("Lab 3: Vector Embeddings and Hybrid Search")
