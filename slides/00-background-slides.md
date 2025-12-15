@@ -48,21 +48,19 @@ James's **profile document** (unstructured data):
 
 ---
 
+![](images/graph_augmentation.png)
+
+---
+
 ## The Solution: Agent-Augmented Enrichment
 
-```
-┌─────────────────┐                      ┌─────────────────────────────┐
-│                 │      Extract         │      DATABRICKS LAKEHOUSE   │
-│   Neo4j Graph   │─────────────────────▶│                             │
-│                 │                      │  Delta Tables + Documents   │
-│  Nodes & Rels   │                      │         │                   │
-│  (facts)        │      Enrich          │         ▼                   │
-│                 │◀─────────────────────│  Multi-Agent Supervisor     │
-└─────────────────┘                      │  (Genie + Knowledge Agent)  │
-                                         └─────────────────────────────┘
-```
+![](images/architecture-diagram.jpeg)
 
 **The loop:** Extract graph → Analyze with agents → Enrich graph → Repeat
+
+---
+
+![h:500](images/use_cases.jpeg)
 
 ---
 
