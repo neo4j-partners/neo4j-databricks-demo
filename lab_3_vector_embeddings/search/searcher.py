@@ -28,6 +28,19 @@ Search Types Available:
    - Uses VectorCypherRetriever/HybridCypherRetriever with custom retrieval queries
    - Best for: Context enrichment, finding related entities
 
+How neo4j-graphrag Hybrid Search Works:
+    The library performs result fusion entirely in Cypher at the database level:
+
+    1. Vector search runs, scores normalized by max: score / max_vector_score
+    2. Fulltext search runs, scores normalized by max: score / max_fulltext_score
+    3. Results combined via UNION (keeps all rows from both searches)
+    4. Deduplication via aggregation:
+       - NAIVE:  WITH node, max(score) AS score  (takes best score from either index)
+       - LINEAR: WITH node, sum(score) AS score  (combines weighted scores)
+    5. Final ORDER BY score DESC LIMIT top_k
+
+    This means no Python-side deduplication is needed - the library handles it.
+
 Key Classes:
     - DocumentSearcher: Main search interface with lazy-initialized retrievers
     - create_searcher(): Factory function for creating searcher instances
@@ -63,7 +76,12 @@ from ..models import (
 
 
 def _ranker_from_config(ranker: HybridRankerType) -> HybridSearchRanker:
-    """Convert schema HybridRankerType to neo4j-graphrag HybridSearchRanker."""
+    """Convert schema HybridRankerType to neo4j-graphrag HybridSearchRanker.
+
+    Ranker determines how vector and fulltext scores are combined:
+    - NAIVE: max(vector_score, fulltext_score) - best single score wins
+    - LINEAR: alpha * vector_score + (1-alpha) * fulltext_score - weighted blend
+    """
     if ranker == HybridRankerType.LINEAR:
         return HybridSearchRanker.LINEAR
     return HybridSearchRanker.NAIVE
@@ -188,7 +206,11 @@ class DocumentSearcher:
 
     @property
     def hybrid_retriever(self) -> HybridRetriever:
-        """Get or create HybridRetriever."""
+        """Get or create HybridRetriever.
+
+        HybridRetriever combines vector and fulltext search in a single Cypher query.
+        Score fusion and deduplication happen at the database level, not in Python.
+        """
         if self._hybrid_retriever is None:
             self._hybrid_retriever = HybridRetriever(
                 driver=self.driver,
@@ -292,9 +314,19 @@ class DocumentSearcher:
     ) -> list[SearchResult]:
         """Perform hybrid search combining vector and full-text.
 
+        Uses neo4j-graphrag HybridRetriever which fuses results at the database level:
+        - NAIVE ranker: Normalizes scores per-index, returns max(score) for duplicates
+        - LINEAR ranker: Weighted combination using alpha (vector weight) and 1-alpha (fulltext)
+
+        The library handles deduplication via Cypher aggregation, so no Python-side
+        deduplication is needed.
+
         Args:
             query: Query text for both vector and keyword search.
             config: Search configuration including ranker and alpha.
+                - ranker: NAIVE (default) or LINEAR
+                - alpha: Required for LINEAR ranker (0.0-1.0, weight for vector score)
+                - effective_search_ratio: Candidate pool multiplier for better fusion
 
         Returns:
             List of SearchResult objects ordered by combined score.
@@ -302,27 +334,16 @@ class DocumentSearcher:
         config = config or SearchConfig()
         ranker = _ranker_from_config(config.ranker)
 
-        # Request more results to account for duplicates that will be removed
+        # The library handles deduplication at the database level via UNION + aggregation
         raw_result = self.hybrid_retriever.get_search_results(
             query_text=query,
-            top_k=config.top_k * 2,  # Fetch extra to handle duplicates
+            top_k=config.top_k,
             effective_search_ratio=config.effective_search_ratio,
             ranker=ranker,
             alpha=config.alpha,
         )
 
-        # Deduplicate by chunk_id (NAIVE ranker returns duplicates from vector + fulltext)
-        results: list[SearchResult] = []
-        seen_chunk_ids: set[str] = set()
-        for record in raw_result.records:
-            result = _record_to_search_result(record)
-            if result.chunk_id not in seen_chunk_ids:
-                seen_chunk_ids.add(result.chunk_id)
-                results.append(result)
-                if len(results) >= config.top_k:
-                    break
-
-        return results
+        return [_record_to_search_result(record) for record in raw_result.records]
 
     def vector_search_with_graph_traversal(
         self,
@@ -331,12 +352,16 @@ class DocumentSearcher:
     ) -> GraphTraversalResult:
         """Perform vector search with graph traversal to related entities.
 
-        Uses VectorCypherRetriever to find similar chunks and traverse
-        relationships to connected Customer, Company, and Stock nodes.
+        Uses VectorCypherRetriever which:
+        1. Finds similar chunks via vector similarity search
+        2. Applies the retrieval_query to traverse from chunks to related entities
+
+        The retrieval query follows the investment graph path:
+        Chunk -> Document -> Customer -> Account -> Position -> Stock -> Company
 
         Args:
             query: Natural language query text.
-            config: Search configuration.
+            config: Search configuration (top_k, effective_search_ratio).
 
         Returns:
             GraphTraversalResult with search results and related entities.
@@ -405,12 +430,16 @@ class DocumentSearcher:
     ) -> GraphTraversalResult:
         """Perform hybrid search with graph traversal to related entities.
 
-        Uses HybridCypherRetriever to find chunks using both vector and
-        full-text search, then traverses to connected entities.
+        Uses HybridCypherRetriever which:
+        1. Performs hybrid search with database-level deduplication via UNION + aggregation
+        2. Applies the retrieval_query to traverse from chunks to related entities
+
+        The retrieval query follows the investment graph path:
+        Chunk -> Document -> Customer -> Account -> Position -> Stock -> Company
 
         Args:
             query: Query text.
-            config: Search configuration.
+            config: Search configuration (ranker, alpha, effective_search_ratio).
 
         Returns:
             GraphTraversalResult with search results and related entities.
@@ -418,9 +447,8 @@ class DocumentSearcher:
         config = config or SearchConfig()
         ranker = _ranker_from_config(config.ranker)
 
-        # Retrieval query that traverses to related entities through graph paths:
-        # Path: Chunk -> Document -> Customer -> Account -> Position -> Stock -> Company
-        # This finds what stocks/companies the customer (from the document) actually invests in
+        # Retrieval query appended after hybrid search deduplication
+        # Traverses: Chunk -> Document -> Customer -> Account -> Position -> Stock -> Company
         retrieval_query = """
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
@@ -445,18 +473,16 @@ class DocumentSearcher:
             neo4j_database=self.neo4j_config.database,
         )
 
-        # Request more results to account for duplicates that will be removed
+        # Library handles deduplication at search level; retrieval_query runs after
         raw_result = retriever.get_search_results(
             query_text=query,
-            top_k=config.top_k * 2,  # Fetch extra to handle duplicates
+            top_k=config.top_k,
             effective_search_ratio=config.effective_search_ratio,
             ranker=ranker,
             alpha=config.alpha,
         )
 
-        # Deduplicate by chunk_id (hybrid search returns duplicates from vector + fulltext)
         search_results: list[SearchResult] = []
-        seen_chunk_ids: set[str] = set()
         all_customers: list[dict] = []
         all_companies: list[dict] = []
         all_stocks: list[dict] = []
@@ -466,21 +492,11 @@ class DocumentSearcher:
 
         for record in raw_result.records:
             result = _record_to_search_result(record)
-
-            # Skip duplicate chunks
-            if result.chunk_id in seen_chunk_ids:
-                continue
-            seen_chunk_ids.add(result.chunk_id)
             search_results.append(result)
-
             _collect_entities(
                 record, seen_customers, seen_companies, seen_stocks,
                 all_customers, all_companies, all_stocks,
             )
-
-            # Stop after collecting enough unique results
-            if len(search_results) >= config.top_k:
-                break
 
         return GraphTraversalResult(
             search_results=search_results,

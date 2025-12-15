@@ -324,31 +324,9 @@ results = retriever.get_search_results(
 
 ---
 
-## Hybrid Retriever
+## Graph-Aware Search (VectorCypherRetriever)
 
-Combine vector similarity with keyword matching:
-
-```python
-from neo4j_graphrag.retrievers import HybridRetriever
-
-retriever = HybridRetriever(
-    driver=driver,
-    vector_index_name="chunk_embedding_index",
-    fulltext_index_name="chunk_text_index",
-    embedder=embedder,
-)
-
-results = retriever.get_search_results(
-    query_text="renewable energy investments",
-    top_k=5,
-)
-```
-
----
-
-## Graph-Aware Search
-
-Combine semantic search with graph traversal:
+Combine semantic search with graph traversal using a custom retrieval query:
 
 ```python
 from neo4j_graphrag.retrievers import VectorCypherRetriever
@@ -368,6 +346,8 @@ retriever = VectorCypherRetriever(
 )
 ```
 
+The retrieval query runs **after** vector search, allowing graph traversal from found chunks.
+
 ---
 
 ## Why Hybrid Search?
@@ -376,9 +356,99 @@ retriever = VectorCypherRetriever(
 |------------|-----------|------------|
 | **Vector** | Semantic similarity, synonyms | Misses exact terms |
 | **Keyword** | Exact matches, proper nouns | Misses meaning |
-| **Hybrid** | Best of both worlds | Requires tuning |
+| **Hybrid** | Best of both | More complex |
 
-Hybrid search ensures "renewable energy" finds both semantically similar content AND exact keyword matches.
+**Example:** Query "renewable energy"
+- **Vector** finds "green investments", "sustainable portfolios"
+- **Keyword** finds exact phrase "renewable energy"
+- **Hybrid** finds both, then fuses results
+
+---
+
+## How Hybrid Search Works (neo4j-graphrag)
+
+The library performs result fusion entirely in Cypher at the database level:
+
+1. **Vector search** runs → scores normalized: `score / max_vector_score`
+2. **Fulltext search** runs → scores normalized: `score / max_fulltext_score`
+3. Results combined via **UNION**
+4. **Deduplication** via aggregation:
+   - **NAIVE**: `max(score)` — best score from either index wins
+   - **LINEAR**: `alpha × vector + (1-alpha) × fulltext` — weighted blend
+5. Final `ORDER BY score DESC LIMIT top_k`
+
+**No Python-side deduplication needed** — the library handles it in Cypher.
+
+---
+
+## NAIVE vs LINEAR Ranker
+
+| Aspect | NAIVE | LINEAR |
+|--------|-------|--------|
+| **Formula** | `max(vector, fulltext)` | `α × vector + (1-α) × fulltext` |
+| **Parameters** | None | `alpha` (0.0 to 1.0) |
+| **Behavior** | Best single score wins | Weighted combination |
+| **Use when** | Either index could be best | You want to tune balance |
+
+**NAIVE example:** Doc appears in vector (0.9) and fulltext (0.6) → final score: **0.9**
+
+**LINEAR example (α=0.7):** Same doc → `0.7 × 0.9 + 0.3 × 0.6` = **0.81**
+
+**When to use each:**
+- **NAIVE**: Good default, discovers results from either index equally
+- **LINEAR**: When you need fine control (e.g., prioritize semantic meaning with α=0.8)
+
+---
+
+## Hybrid Retriever
+
+Combine vector similarity with keyword matching:
+
+```python
+from neo4j_graphrag.retrievers import HybridRetriever
+
+retriever = HybridRetriever(
+    driver=driver,
+    vector_index_name="chunk_embedding_index",
+    fulltext_index_name="chunk_text_index",
+    embedder=embedder,
+)
+
+# NAIVE ranker (default): max(vector_score, fulltext_score)
+results = retriever.get_search_results(query_text="renewable energy", top_k=5)
+
+# LINEAR ranker: alpha * vector + (1-alpha) * fulltext
+results = retriever.get_search_results(
+    query_text="renewable energy", top_k=5,
+    ranker="linear", alpha=0.7  # 70% vector, 30% fulltext
+)
+```
+
+---
+
+## Graph-Aware Hybrid Search (HybridCypherRetriever)
+
+Combine hybrid search with graph traversal:
+
+```python
+from neo4j_graphrag.retrievers import HybridCypherRetriever
+
+retrieval_query = """
+WITH node, score
+MATCH (node)-[:FROM_DOCUMENT]->(d:Document)-[:DESCRIBES]->(c:Customer)
+MATCH (c)-[:HAS_ACCOUNT]->(:Account)-[:HAS_POSITION]->(:Position)
+      -[:OF_SECURITY]->(s:Stock)-[:OF_COMPANY]->(company:Company)
+RETURN node.text, score, c.name AS customer, collect(DISTINCT company.name) AS companies
+"""
+
+retriever = HybridCypherRetriever(
+    driver=driver,
+    vector_index_name="chunk_embedding_index",
+    fulltext_index_name="chunk_text_index",
+    retrieval_query=retrieval_query,
+    embedder=embedder,
+)
+```
 
 ---
 
