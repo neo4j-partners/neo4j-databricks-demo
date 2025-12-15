@@ -429,7 +429,7 @@ def main() -> None:
         "--provider",
         type=str,
         choices=["sentence_transformers", "databricks"],
-        default="sentence_transformers",
+        default="databricks",
         help="Embedding provider: sentence_transformers (local, 384 dims) or databricks (cloud, 1024 dims)",
     )
     parser.add_argument(
