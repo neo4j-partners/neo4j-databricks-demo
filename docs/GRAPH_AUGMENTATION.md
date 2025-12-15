@@ -1,14 +1,12 @@
-# When Your Graph Database Knows Less Than Your Documents
+# Agent-Augmented Knowledge Graphs: Bridging Structured and Unstructured Data
 
-James Anderson's customer profile mentions renewable energy stocks. His portfolio contains zero renewable energy holdings. This gap exists in thousands of organizations: structured databases store what customers *have*, while unstructured documents describe what they *want*. Traditional ETL pipelines never bridge this divide.
-
-This post demonstrates how AI agents can continuously enrich a Neo4j knowledge graph by analyzing documents stored in a Databricks lakehouse. The pattern creates a feedback loop where agents read graph data, compare it against unstructured sources, and propose new relationships that capture insights no schema designer anticipated.
+The future of enterprise data architecture lies not in choosing between graph databases and lakehouse platforms, but in intelligently combining them. This blog explores a powerful pattern: using AI agents to enrich knowledge graphs by bridging the gap between structured graph data and unstructured documents, creating a continuous loop of insight extraction and graph enhancement.
 
 > **Prerequisites:** This post assumes familiarity with Neo4j's property graph model, Databricks Unity Catalog, and basic Cypher. If terms like "Delta Lake" or "graph traversal" need explanation, start with the [Background Concepts](BACKGROUND_CONCEPTS.md) guide.
 
 ## The Problem: Structured Data Captures Facts, Not Intent
 
-A retail investment platform stores customer portfolios in Neo4j. The graph models seven node types and seven relationships:
+A retail investment platform stores customer portfolios in Neo4j. The graph models seven node types and seven relationships.
 
 ```
 ┌──────────────┐     ┌───────────────┐     ┌──────────────┐
@@ -21,21 +19,19 @@ A retail investment platform stores customer portfolios in Neo4j. The graph mode
                      └───────────────┘     └──────────────┘
 ```
 
-This structure captures transactional reality with precision. The graph knows that customer C0001 holds 50 shares of TCOR purchased at $142.50, that the position sits in an investment account at First National Trust, and that TCOR represents TechCore Solutions in the technology sector. Cypher queries traverse these relationships in milliseconds, answering questions like "show me all customers holding technology stocks worth over $10,000" without breaking a sweat.
+This structure captures transactional reality with precision. The graph knows that customer C0001 holds 50 shares of TCOR purchased at $142.50, that the position sits in an investment account at First National Trust, and that TCOR represents TechCore Solutions in the technology sector. Cypher queries traverse these relationships in milliseconds, answering questions like "show me all customers holding technology stocks worth over $10,000" with ease.
 
 What the graph cannot answer: which customers *want* renewable energy exposure but don't have it?
+
+James Anderson's customer profile mentions renewable energy stocks. His portfolio contains zero renewable energy holdings. The database knows James holds TCOR, SMTC, and MOBD, all technology stocks. It has no idea he wants renewable energy exposure. A financial advisor reading the profile would spot this gap immediately. The graph remains oblivious.
 
 That information lives in customer profile documents stored separately, never connected to the graph structure. Here's an excerpt from James Anderson's profile (customer C0001):
 
 > James is particularly interested in emerging technologies and has expressed interest in expanding his portfolio to include renewable energy stocks and retail investment companies.
 
-The structured database knows James holds TCOR, SMTC, and MOBD (all technology stocks). It has no idea he wants renewable energy exposure. A financial advisor reading the profile would spot this gap immediately and start a conversation about solar ETFs or wind power companies. The graph remains oblivious, and so does any application built on top of it.
+The disconnect isn't a data quality problem. The profile information exists. Entity extraction could pull "renewable energy" as a concept, but that alone doesn't reveal the mismatch between James's stated preferences and his actual holdings. Customer service representatives write these profiles during onboarding calls. Relationship managers update them after quarterly reviews. The insights accumulate in prose form, describing what customers want rather than discrete entities that map cleanly to graph nodes.
 
-This disconnect isn't a data quality problem. The profile information exists; it simply lives in a format that traditional ETL processes ignore. Customer service representatives write these profiles during onboarding calls. Relationship managers update them after quarterly reviews. The insights accumulate in prose form, rich with context and nuance, while the graph database maintains its rigid schema of nodes and relationships.
-
-## The Architecture: Agents as Analytical Intermediaries
-
-The solution introduces AI agents that operate between the graph database and the document store. These agents read both sources, identify discrepancies, and propose graph enrichments that capture insights from unstructured text.
+## The Architecture of Agent-Augmented Knowledge Graphs
 
 ```
                               ┌─────────────────────────────────────┐
@@ -59,11 +55,17 @@ The solution introduces AI agents that operate between the graph database and th
 └─────────────────┘           └──┴───────────────────────────────┴─┘
 ```
 
-The bidirectional flow distinguishes this architecture from traditional ETL. Data doesn't just move from source to destination; it cycles back. Extraction populates the lakehouse with structured graph data that agents can query. Enrichment returns agent-discovered relationships to Neo4j, where they become first-class citizens available for graph traversal and algorithms.
+### The Enrichment Loop
 
-This cycling matters because insights compound. An agent discovers that James wants renewable energy stocks. That enrichment creates an INTERESTED_IN relationship in the graph. The next analysis cycle might find other customers with similar interest patterns, enabling community detection algorithms to cluster customers by shared preferences. Those clusters inform marketing campaigns, which generate new customer interactions, which produce new profile updates, which feed back into the enrichment loop.
+The bidirectional flow distinguishes this architecture from traditional ETL. Data cycles rather than flowing one direction. Extraction populates the lakehouse with structured graph data. Agents analyze that data against unstructured documents. Enrichment writes discovered relationships back to Neo4j, where they become first-class citizens for graph traversal and algorithms. Each cycle compounds insights: an INTERESTED_IN relationship enables community detection, which informs marketing, which generates new interactions, which feed back into the next enrichment cycle.
 
-The lakehouse serves as the analytical staging ground where this synthesis happens. Neo4j excels at storing and traversing relationships, but it wasn't designed for the kind of cross-referencing analysis that compares document contents against graph structure. Databricks provides the compute environment where agents can join tabular extracts with vector-searched document chunks, run SQL aggregations alongside LLM inference, and produce enrichment proposals that would be awkward to generate inside the graph database itself.
+### Neo4j: The Graph Foundation
+
+Neo4j's property graph model stores entities as nodes and connections as relationships, each carrying rich attributes. The Cypher query language makes relationship-centric questions natural to express. "Which customers have accounts at the same banks as customers holding renewable energy stocks?" becomes a straightforward graph traversal rather than a complex multi-join SQL query. This graph-native approach captures semantic meaning as first-class citizens, mirroring how domain experts naturally think about the problem space.
+
+### Databricks: The Analytical Staging Ground
+
+The lakehouse handles what Neo4j wasn't designed for: cross-referencing analysis that compares document contents against graph structure. Structured data extracted from Neo4j arrives in Delta Lake tables, feeding a Genie agent that queries using natural language. Unstructured documents flow into Unity Catalog volumes where a Knowledge Assistant accesses them via RAG. A multi-agent supervisor coordinates both, joining tabular extracts with vector-searched document chunks, running SQL aggregations alongside LLM inference, and producing enrichment proposals that would be awkward to generate inside the graph database itself.
 
 ## Step 1: Extract Graph Data to the Lakehouse
 
