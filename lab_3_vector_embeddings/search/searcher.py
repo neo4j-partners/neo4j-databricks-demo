@@ -303,16 +303,29 @@ class DocumentSearcher:
         config = config or SearchConfig()
         chunk_label = self.index_config.chunk_label
 
-        # Retrieval query that traverses to related entities
-        # Note: Only traverses FROM_DOCUMENT and DESCRIBES relationships
-        # MENTIONS relationships (Chunk->Company/Stock) are not created in this lab
+        # Retrieval query that traverses to related entities through multiple paths:
+        # 1. Chunk -> Document -> Customer (via DESCRIBES)
+        # 2. Find companies mentioned by name in document title/text
+        # 3. Find stocks via company relationships
         retrieval_query = f"""
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
+
+        // Path 1: Document -> Customer (for customer profiles)
         OPTIONAL MATCH (d)-[:DESCRIBES]->(customer:Customer)
+
+        // Path 2: Find companies whose name appears in document title
+        OPTIONAL MATCH (company:Company)
+        WHERE d.title CONTAINS company.name
+
+        // Path 3: Find stocks for matched companies
+        OPTIONAL MATCH (stock:Stock)-[:OF_COMPANY]->(company)
+
         RETURN node, score,
                d AS document,
-               collect(DISTINCT customer) AS customers
+               collect(DISTINCT customer) AS customers,
+               collect(DISTINCT company) AS companies,
+               collect(DISTINCT stock) AS stocks
         """
 
         retriever = VectorCypherRetriever(
@@ -331,6 +344,8 @@ class DocumentSearcher:
 
         search_results: list[SearchResult] = []
         all_customers: list[dict] = []
+        all_companies: list[dict] = []
+        all_stocks: list[dict] = []
 
         for record in raw_result.records:
             # Extract search result
@@ -345,11 +360,27 @@ class DocumentSearcher:
                     if customer_dict not in all_customers:
                         all_customers.append(customer_dict)
 
+            # Collect related companies (matched by name in document title)
+            companies = record.get("companies", [])
+            for company in companies:
+                if company and hasattr(company, "items"):
+                    company_dict = dict(company.items())
+                    if company_dict not in all_companies:
+                        all_companies.append(company_dict)
+
+            # Collect related stocks (via company relationship)
+            stocks = record.get("stocks", [])
+            for stock in stocks:
+                if stock and hasattr(stock, "items"):
+                    stock_dict = dict(stock.items())
+                    if stock_dict not in all_stocks:
+                        all_stocks.append(stock_dict)
+
         return GraphTraversalResult(
             search_results=search_results,
             related_customers=all_customers,
-            related_companies=[],  # MENTIONS relationships not created in this lab
-            related_stocks=[],     # MENTIONS relationships not created in this lab
+            related_companies=all_companies,
+            related_stocks=all_stocks,
         )
 
     def hybrid_search_with_graph_traversal(
@@ -372,16 +403,29 @@ class DocumentSearcher:
         config = config or SearchConfig()
         ranker = _ranker_from_config(config.ranker)
 
-        # Retrieval query that traverses to related entities
-        # Note: Only traverses FROM_DOCUMENT and DESCRIBES relationships
-        # MENTIONS relationships (Chunk->Company/Stock) are not created in this lab
+        # Retrieval query that traverses to related entities through multiple paths:
+        # 1. Chunk -> Document -> Customer (via DESCRIBES)
+        # 2. Find companies mentioned by name in document title/text
+        # 3. Find stocks via company relationships
         retrieval_query = """
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
+
+        // Path 1: Document -> Customer (for customer profiles)
         OPTIONAL MATCH (d)-[:DESCRIBES]->(customer:Customer)
+
+        // Path 2: Find companies whose name appears in document title
+        OPTIONAL MATCH (company:Company)
+        WHERE d.title CONTAINS company.name
+
+        // Path 3: Find stocks for matched companies
+        OPTIONAL MATCH (stock:Stock)-[:OF_COMPANY]->(company)
+
         RETURN node, score,
                d AS document,
-               collect(DISTINCT customer) AS customers
+               collect(DISTINCT customer) AS customers,
+               collect(DISTINCT company) AS companies,
+               collect(DISTINCT stock) AS stocks
         """
 
         retriever = HybridCypherRetriever(
@@ -406,6 +450,8 @@ class DocumentSearcher:
         search_results: list[SearchResult] = []
         seen_chunk_ids: set[str] = set()
         all_customers: list[dict] = []
+        all_companies: list[dict] = []
+        all_stocks: list[dict] = []
 
         for record in raw_result.records:
             # Extract search result
@@ -425,6 +471,22 @@ class DocumentSearcher:
                     if customer_dict not in all_customers:
                         all_customers.append(customer_dict)
 
+            # Collect related companies (matched by name in document title)
+            companies = record.get("companies", [])
+            for company in companies:
+                if company and hasattr(company, "items"):
+                    company_dict = dict(company.items())
+                    if company_dict not in all_companies:
+                        all_companies.append(company_dict)
+
+            # Collect related stocks (via company relationship)
+            stocks = record.get("stocks", [])
+            for stock in stocks:
+                if stock and hasattr(stock, "items"):
+                    stock_dict = dict(stock.items())
+                    if stock_dict not in all_stocks:
+                        all_stocks.append(stock_dict)
+
             # Stop after collecting enough unique results
             if len(search_results) >= config.top_k:
                 break
@@ -432,8 +494,8 @@ class DocumentSearcher:
         return GraphTraversalResult(
             search_results=search_results,
             related_customers=all_customers,
-            related_companies=[],  # MENTIONS relationships not created in this lab
-            related_stocks=[],     # MENTIONS relationships not created in this lab
+            related_companies=all_companies,
+            related_stocks=all_stocks,
         )
 
 
