@@ -261,18 +261,25 @@ class DocumentSearcher:
         config = config or SearchConfig()
         ranker = _ranker_from_config(config.ranker)
 
+        # Request more results to account for duplicates that will be removed
         raw_result = self.hybrid_retriever.get_search_results(
             query_text=query,
-            top_k=config.top_k,
+            top_k=config.top_k * 2,  # Fetch extra to handle duplicates
             effective_search_ratio=config.effective_search_ratio,
             ranker=ranker,
             alpha=config.alpha,
         )
 
+        # Deduplicate by chunk_id (NAIVE ranker returns duplicates from vector + fulltext)
         results: list[SearchResult] = []
+        seen_chunk_ids: set[str] = set()
         for record in raw_result.records:
             result = _record_to_search_result(record)
-            results.append(result)
+            if result.chunk_id not in seen_chunk_ids:
+                seen_chunk_ids.add(result.chunk_id)
+                results.append(result)
+                if len(results) >= config.top_k:
+                    break
 
         return results
 
@@ -386,20 +393,28 @@ class DocumentSearcher:
             neo4j_database=self.neo4j_config.database,
         )
 
+        # Request more results to account for duplicates that will be removed
         raw_result = retriever.get_search_results(
             query_text=query,
-            top_k=config.top_k,
+            top_k=config.top_k * 2,  # Fetch extra to handle duplicates
             effective_search_ratio=config.effective_search_ratio,
             ranker=ranker,
             alpha=config.alpha,
         )
 
+        # Deduplicate by chunk_id (hybrid search returns duplicates from vector + fulltext)
         search_results: list[SearchResult] = []
+        seen_chunk_ids: set[str] = set()
         all_customers: list[dict] = []
 
         for record in raw_result.records:
             # Extract search result
             result = _record_to_search_result(record)
+
+            # Skip duplicates
+            if result.chunk_id in seen_chunk_ids:
+                continue
+            seen_chunk_ids.add(result.chunk_id)
             search_results.append(result)
 
             # Collect related customers (via Document->DESCRIBES->Customer)
@@ -409,6 +424,10 @@ class DocumentSearcher:
                     customer_dict = dict(customer.items())
                     if customer_dict not in all_customers:
                         all_customers.append(customer_dict)
+
+            # Stop after collecting enough unique results
+            if len(search_results) >= config.top_k:
+                break
 
         return GraphTraversalResult(
             search_results=search_results,
