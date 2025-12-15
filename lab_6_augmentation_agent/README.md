@@ -128,9 +128,3 @@ for result in results:
 - [Databricks Multi-Agent Supervisor](https://docs.databricks.com/aws/en/generative-ai/agent-bricks/multi-agent-supervisor)
 
 ---
-
-## Deprecated: LangGraph Implementation
-
-The `core/` directory and `augmentation_agent.py` contain a LangGraph implementation that **does not work** with MAS endpoints. These files are preserved for reference but should not be used.
-
-See [WHY_NOT_LANGGRAPH.md](./WHY_NOT_LANGGRAPH.md) for technical details on why the LangGraph approach failed.

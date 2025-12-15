@@ -23,6 +23,7 @@ Authentication is handled automatically by WorkspaceClient:
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
@@ -374,19 +375,22 @@ def fetch_gap_analysis(endpoint_name: str | None = None) -> str:
         >>> print(f"Retrieved {len(analysis)} characters of gap analysis")
     """
     print("\n" + "=" * 60)
-    print("QUERYING MULTI-AGENT SUPERVISOR FOR GAP ANALYSIS")
+    print("STEP 1: QUERYING MULTI-AGENT SUPERVISOR FOR GAP ANALYSIS")
     print("=" * 60)
     print("  The MAS coordinates Genie (structured data) and")
     print("  Knowledge Agent (documents) to find enrichment opportunities.")
+    print("  This may take 1-3 minutes as the MAS routes to multiple agents...")
     print("")
 
+    start_time = time.time()
     client = MASClient(endpoint_name)
     result = client.run_comprehensive_analysis()
+    elapsed = time.time() - start_time
 
     if result.success:
-        print(f"\n  [OK] Retrieved {len(result.response):,} characters of analysis")
+        print(f"\n  [OK] Retrieved {len(result.response):,} characters of analysis ({elapsed:.1f}s)")
     else:
-        print(f"\n  [FAIL] Analysis failed: {result.error}")
+        print(f"\n  [FAIL] Analysis failed: {result.error} ({elapsed:.1f}s)")
 
     print("=" * 60)
 

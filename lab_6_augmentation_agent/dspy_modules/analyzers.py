@@ -19,6 +19,7 @@ References:
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 
 import dspy
@@ -274,11 +275,13 @@ class GraphAugmentationAnalyzer(dspy.Module):
         any_success = False
 
         # Run each requested analysis - each returns a specific typed result
-        for analysis_type in to_run:
+        total_start = time.time()
+        for i, analysis_type in enumerate(to_run, 1):
             if analysis_type not in all_analyses:
                 continue
 
-            print(f"  Running {analysis_type} analysis...")
+            print(f"\n  [{i}/{len(to_run)}] Running {analysis_type} analysis...")
+            start_time = time.time()
 
             if analysis_type == "investment_themes":
                 result = self.investment_themes(document_context)
@@ -314,7 +317,11 @@ class GraphAugmentationAnalyzer(dspy.Module):
             else:
                 status = "SKIPPED"
 
-            print(f"    [{status}]")
+            elapsed = time.time() - start_time
+            print(f"       [{status}] ({elapsed:.1f}s)")
+
+        total_elapsed = time.time() - total_start
+        print(f"\n  All analyses completed in {total_elapsed:.1f}s")
 
         # Build the consolidated response
         response = AugmentationResponse(

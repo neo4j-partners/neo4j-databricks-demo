@@ -54,6 +54,28 @@ Build a **DSPy Agent** that uses the Multi-Agent Supervisor to **analyze documen
 
 ---
 
+## Data Flow: Two-Stage Analysis
+
+```
+MAS Query (one time)          →    Same gap_analysis data    →    4 Different Analyzers
+┌─────────────────────────┐        ┌───────────────────-┐        ┌─────────────────────────┐
+│ fetch_gap_analysis()    │   →    │  gap_analysis      │   →    │ Each analyzer extracts  │
+│ Returns customer gaps   │        │  (raw gap analysis)│        │ different insights      │
+└─────────────────────────┘        └──────────────────-─┘        └─────────────────────────┘
+```
+
+**Stage 1: MAS Query (Direct API Call)**
+- Sends comprehensive prompt to Multi-Agent Supervisor
+- MAS coordinates Genie (structured) + Knowledge Agent (documents)
+- Returns **raw text** analysis comparing both sources
+
+**Stage 2: DSPy Analyzers (Structured Extraction)**
+- Same text passed to 4 different analyzers
+- Each extracts different insights into **typed Pydantic models**
+- Investment Themes, New Entities, Missing Attributes, Implied Relationships
+
+---
+
 ## DSPy: Signatures as Function Contracts
 
 DSPy treats LLM calls like function definitions. You declare the **input** and **output** types, and DSPy figures out how to prompt the model.
