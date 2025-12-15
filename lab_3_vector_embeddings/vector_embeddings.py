@@ -135,14 +135,31 @@ except ImportError:
     from lab_3_vector_embeddings.search import DocumentSearcher, create_searcher
 
 
-def load_neo4j_config() -> Neo4jConfig:
-    """Load Neo4j configuration from Databricks Secrets.
+def is_running_in_databricks() -> bool:
+    """Check if code is running inside Databricks runtime."""
+    try:
+        # dbutils is available in Databricks runtime
+        import IPython
+        ipython = IPython.get_ipython()
+        if ipython is not None and hasattr(ipython, 'user_ns'):
+            return 'dbutils' in ipython.user_ns or 'spark' in ipython.user_ns
+    except Exception:
+        pass
+    # Also check for Databricks-specific environment variables
+    return "DATABRICKS_RUNTIME_VERSION" in os.environ
+
+
+def load_neo4j_config() -> tuple[Neo4jConfig, str | None]:
+    """Load Neo4j configuration and volume path from Databricks Secrets.
 
     Uses the Databricks SDK to retrieve secrets from the 'neo4j-creds' scope.
     Requires Databricks authentication to be configured (CLI profile or env vars).
 
     Note: The Databricks SDK returns secret values as base64-encoded strings,
     which must be decoded before use.
+
+    Returns:
+        Tuple of (Neo4jConfig, volume_path) where volume_path may be None if not set.
     """
     import base64
     from databricks.sdk import WorkspaceClient
@@ -184,12 +201,23 @@ def load_neo4j_config() -> Neo4jConfig:
     except Exception as e:
         raise ValueError(f"Failed to get 'password' from neo4j-creds scope: {e}") from e
 
-    return Neo4jConfig(
+    # Also retrieve volume_path for Unity Catalog access
+    volume_path: str | None = None
+    try:
+        volume_path_encoded = client.secrets.get_secret(scope="neo4j-creds", key="volume_path").value
+        volume_path = decode_secret(volume_path_encoded)
+        print(f"  [OK] volume_path: {volume_path}")
+    except Exception as e:
+        print(f"  [INFO] volume_path not configured (optional): {e}")
+
+    neo4j_config = Neo4jConfig(
         uri=uri,
         username=username,
         password=password,
         database="neo4j",
     )
+
+    return neo4j_config, volume_path
 
 
 def load_html_files_local(html_dir: Path) -> list[tuple[str, str, str]]:
@@ -207,6 +235,46 @@ def load_html_files_local(html_dir: Path) -> list[tuple[str, str, str]]:
         with open(html_path, "r", encoding="utf-8") as f:
             content = f.read()
         html_files.append((content, html_path.name, str(html_path)))
+
+    return html_files
+
+
+def load_html_files_databricks(volume_path: str) -> list[tuple[str, str, str]]:
+    """Load HTML files from Databricks Unity Catalog Volume.
+
+    Uses dbutils.fs to access files in the Unity Catalog volume.
+    This function only works when running inside Databricks runtime.
+
+    Args:
+        volume_path: Unity Catalog volume path (e.g., /Volumes/catalog/schema/volume).
+
+    Returns:
+        List of tuples (html_content, filename, source_path).
+    """
+    # Get dbutils from IPython namespace (available in Databricks runtime)
+    import IPython
+    ipython = IPython.get_ipython()
+    if ipython is None or 'dbutils' not in ipython.user_ns:
+        raise RuntimeError("dbutils not available - not running in Databricks")
+
+    dbutils = ipython.user_ns['dbutils']
+
+    html_path = f"{volume_path}/html"
+    html_files: list[tuple[str, str, str]] = []
+
+    print(f"  Listing files in: {html_path}")
+
+    try:
+        files = dbutils.fs.ls(html_path)
+    except Exception as e:
+        raise FileNotFoundError(f"Could not list files in {html_path}: {e}") from e
+
+    for file_info in sorted(files, key=lambda f: f.name):
+        if file_info.name.endswith('.html'):
+            filepath = f"{html_path}/{file_info.name}"
+            # dbutils.fs.head reads the first N bytes as a string
+            content = dbutils.fs.head(filepath, 100000)
+            html_files.append((content, file_info.name, filepath))
 
     return html_files
 
@@ -511,17 +579,24 @@ def main() -> None:
     print("=" * 70)
     print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
+    # Detect environment
+    in_databricks = is_running_in_databricks()
+    print(f"Environment: {'Databricks' if in_databricks else 'Local'}")
+
     # Load configurations
     print("\n[1/4] Loading configuration...")
     try:
-        neo4j_config = load_neo4j_config()
+        neo4j_config, volume_path = load_neo4j_config()
         print(f"  [OK] Neo4j config loaded: {neo4j_config.uri}")
+        if volume_path:
+            print(f"  [OK] Volume path: {volume_path}")
     except ValueError as e:
         print(f"  [FAIL] {e}")
         print("\n  Make sure Databricks Secrets are configured:")
         print("    databricks secrets put-secret neo4j-creds url --string-value 'neo4j+s://...'")
         print("    databricks secrets put-secret neo4j-creds username --string-value 'neo4j'")
         print("    databricks secrets put-secret neo4j-creds password --string-value '...'")
+        print("    databricks secrets put-secret neo4j-creds volume_path --string-value '/Volumes/catalog/schema/volume'")
         sys.exit(1)
 
     # Get embedding config for provider
@@ -543,14 +618,36 @@ def main() -> None:
 
     # Load HTML files
     print("\n[2/4] Loading HTML files...")
-    html_dir = Path(args.html_dir) if args.html_dir else PROJECT_ROOT / "data" / "html"
 
-    if not html_dir.exists():
-        print(f"  [FAIL] HTML directory not found: {html_dir}")
-        sys.exit(1)
-
-    html_files = load_html_files_local(html_dir)
-    print(f"  [OK] Loaded {len(html_files)} HTML files from {html_dir}")
+    # Determine source: command line arg > Databricks volume > local data/html
+    if args.html_dir:
+        # Explicit path provided via command line
+        html_dir = Path(args.html_dir)
+        if not html_dir.exists():
+            print(f"  [FAIL] HTML directory not found: {html_dir}")
+            sys.exit(1)
+        html_files = load_html_files_local(html_dir)
+        print(f"  [OK] Loaded {len(html_files)} HTML files from {html_dir}")
+    elif in_databricks and volume_path:
+        # Running in Databricks with volume path configured
+        try:
+            html_files = load_html_files_databricks(volume_path)
+            print(f"  [OK] Loaded {len(html_files)} HTML files from {volume_path}/html")
+        except FileNotFoundError as e:
+            print(f"  [FAIL] {e}")
+            sys.exit(1)
+    else:
+        # Fall back to local data/html directory
+        html_dir = PROJECT_ROOT / "data" / "html"
+        if not html_dir.exists():
+            print(f"  [FAIL] HTML directory not found: {html_dir}")
+            if in_databricks:
+                print("  [HINT] Running in Databricks but volume_path not configured.")
+                print("         Add volume_path to neo4j-creds secrets:")
+                print("         databricks secrets put-secret neo4j-creds volume_path --string-value '/Volumes/...'")
+            sys.exit(1)
+        html_files = load_html_files_local(html_dir)
+        print(f"  [OK] Loaded {len(html_files)} HTML files from {html_dir}")
 
     if not html_files:
         print("  [FAIL] No HTML files found")
