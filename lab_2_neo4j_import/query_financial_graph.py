@@ -1,7 +1,7 @@
 """
 Financial Graph Query Application using Neo4j Spark Connector
 
-Run sample Cypher queries against the Neo4j financial demo database using PySpark
+Run sample queries against the Neo4j financial demo database using PySpark
 and the Neo4j Spark Connector.
 
 Usage:
@@ -9,6 +9,7 @@ Usage:
     Set QUERY_TO_RUN to one of the query constants below.
 
 Available queries:
+    DIRECT_READS          - Read nodes and relationships directly (recommended first)
     QUERY_PORTFOLIO       - Top customers by portfolio value
     QUERY_DIVERSIFIED     - Accounts with multiple holdings
     QUERY_SECTORS         - Investment allocation by sector
@@ -16,7 +17,7 @@ Available queries:
     QUERY_BIDIRECTIONAL   - Accounts with bidirectional flow
     QUERY_HIGH_VALUE      - High-value transactions (>$1000)
     QUERY_RISK_PROFILE    - Customer segmentation by risk
-    RUN_ALL               - Run all queries
+    RUN_ALL               - Run all queries (direct reads first, then Cypher)
 
 Prerequisites:
     - Databricks cluster with Neo4j Spark Connector installed
@@ -24,6 +25,8 @@ Prerequisites:
 
 Best Practices Applied:
     - Uses Spark DataSource V2 API (org.neo4j.spark.DataSource)
+    - Uses 'labels' option for simple node reads (enables automatic pushdown)
+    - Uses 'relationship' option for relationship reads with source/target nodes
     - Uses 'query' option for complex Cypher with multiple MATCH clauses
     - Pushdown optimizations enabled by default
     - LIMIT applied via Spark .limit() not in Cypher (Spark Connector restriction)
@@ -38,6 +41,7 @@ import time
 # =============================================================================
 
 # Query constants
+DIRECT_READS = "direct_reads"  # Read nodes/relationships directly (recommended first)
 QUERY_PORTFOLIO = "portfolio"
 QUERY_DIVERSIFIED = "diversified"
 QUERY_SECTORS = "sectors"
@@ -274,6 +278,111 @@ def display_results(title: str, df):
     print()
 
 
+# =============================================================================
+# DIRECT NODE/RELATIONSHIP READING
+# =============================================================================
+
+def read_nodes_by_label(config: dict, label: str):
+    """
+    Read nodes directly by label using the Neo4j Spark Connector.
+
+    Best Practice: Use 'labels' option for simple node reads.
+    This enables automatic pushdown optimizations for filters, columns, etc.
+    """
+    return (
+        spark.read
+        .format("org.neo4j.spark.DataSource")
+        .option("url", config["neo4j_url"])
+        .option("authentication.basic.username", config["neo4j_user"])
+        .option("authentication.basic.password", config["neo4j_pass"])
+        .option("database", config["neo4j_database"])
+        .option("labels", label)
+        .load()
+    )
+
+
+def read_relationships(config: dict, rel_type: str, source_label: str, target_label: str):
+    """
+    Read relationships directly with source and target node properties.
+
+    Best Practice: Use 'relationship' option with source/target labels
+    to get relationship data along with connected node properties.
+    """
+    return (
+        spark.read
+        .format("org.neo4j.spark.DataSource")
+        .option("url", config["neo4j_url"])
+        .option("authentication.basic.username", config["neo4j_user"])
+        .option("authentication.basic.password", config["neo4j_pass"])
+        .option("database", config["neo4j_database"])
+        .option("relationship", rel_type)
+        .option("relationship.source.labels", source_label)
+        .option("relationship.target.labels", target_label)
+        .load()
+    )
+
+
+def run_direct_reads(config: dict):
+    """
+    Run direct node and relationship read examples.
+
+    These examples demonstrate reading data from Neo4j without writing Cypher.
+    The Spark Connector handles pushdown optimizations automatically.
+    """
+    print()
+    print("=" * 70)
+    print("DIRECT NODE AND RELATIONSHIP READING")
+    print("=" * 70)
+    print()
+    print("The Spark Connector can read nodes and relationships directly")
+    print("without custom Cypher queries. This enables automatic pushdown.")
+    print()
+
+    # Example 1: Read Customer nodes with filters
+    print("-" * 70)
+    print("Example 1: Reading Customer Nodes (with automatic pushdown)")
+    print("-" * 70)
+    start_time = time.time()
+
+    customers_df = read_nodes_by_label(config, "Customer")
+
+    # Filter and select - these operations are pushed down to Neo4j
+    high_income_customers = (
+        customers_df
+        .filter("annual_income > 100000")
+        .filter("credit_score > 700")
+        .select("customer_id", "first_name", "last_name", "annual_income", "credit_score", "risk_profile")
+        .orderBy("annual_income", ascending=False)
+        .limit(10)
+    )
+
+    print("High-income customers (income > $100k, credit score > 700):")
+    high_income_customers.show(truncate=False)
+    elapsed = time.time() - start_time
+    print(f"  [OK] Completed in {elapsed:.2f}s")
+    print()
+
+    # Example 2: Read HAS_ACCOUNT relationships
+    print("-" * 70)
+    print("Example 2: Reading HAS_ACCOUNT Relationships")
+    print("-" * 70)
+    start_time = time.time()
+
+    has_account_df = read_relationships(config, "HAS_ACCOUNT", "Customer", "Account")
+
+    print(f"Schema columns: {has_account_df.columns}")
+    print()
+    print("Sample relationships:")
+    has_account_df.limit(5).show(truncate=False)
+    elapsed = time.time() - start_time
+    print(f"  [OK] Completed in {elapsed:.2f}s")
+    print()
+
+    print("=" * 70)
+    print("DIRECT READS COMPLETE")
+    print("=" * 70)
+
+
 def verify_neo4j_connection(config: dict) -> bool:
     """Verify Neo4j connectivity."""
     print("=" * 70)
@@ -317,9 +426,11 @@ def main():
 
     # Validate query selection
     query_name = QUERY_TO_RUN
-    if query_name not in QUERIES and query_name != RUN_ALL:
+    valid_options = list(QUERIES.keys()) + [DIRECT_READS, RUN_ALL]
+    if query_name not in valid_options:
         print(f"[ERROR] Unknown query: {query_name}")
         print(f"Available options:")
+        print(f"  DIRECT_READS         = '{DIRECT_READS}' (recommended first)")
         print(f"  QUERY_PORTFOLIO      = '{QUERY_PORTFOLIO}'")
         print(f"  QUERY_DIVERSIFIED    = '{QUERY_DIVERSIFIED}'")
         print(f"  QUERY_SECTORS        = '{QUERY_SECTORS}'")
@@ -343,31 +454,41 @@ def main():
         return False
     print("")
 
-    # Step 3: Run queries
-    print("=" * 70)
-    print("EXECUTING QUERIES")
-    print("=" * 70)
-    print("")
-
-    queries_to_run = QUERIES.keys() if query_name == RUN_ALL else [query_name]
-
-    for name in queries_to_run:
-        q = QUERIES[name]
-        print(f"[DEBUG] Running query: {name}")
-        query_start = time.time()
-
+    # Step 3: Run direct reads (first, if requested or running all)
+    if query_name == DIRECT_READS or query_name == RUN_ALL:
         try:
-            df = run_query(config, q["query"])
-            # Apply limit via Spark (not in Cypher) due to Spark Connector restriction
-            if q.get("limit"):
-                df = df.limit(q["limit"])
-            display_results(q["title"], df)
-            query_elapsed = time.time() - query_start
-            print(f"  [OK] Query completed in {query_elapsed:.2f}s")
+            run_direct_reads(config)
         except Exception as e:
-            print(f"  [FAIL] Query failed: {type(e).__name__}")
+            print(f"  [FAIL] Direct reads failed: {type(e).__name__}")
             print(f"         {str(e)[:200]}")
         print("")
+
+    # Step 4: Run Cypher queries (if not just direct reads)
+    if query_name != DIRECT_READS:
+        print("=" * 70)
+        print("EXECUTING CYPHER QUERIES")
+        print("=" * 70)
+        print("")
+
+        queries_to_run = QUERIES.keys() if query_name == RUN_ALL else [query_name]
+
+        for name in queries_to_run:
+            q = QUERIES[name]
+            print(f"[DEBUG] Running query: {name}")
+            query_start = time.time()
+
+            try:
+                df = run_query(config, q["query"])
+                # Apply limit via Spark (not in Cypher) due to Spark Connector restriction
+                if q.get("limit"):
+                    df = df.limit(q["limit"])
+                display_results(q["title"], df)
+                query_elapsed = time.time() - query_start
+                print(f"  [OK] Query completed in {query_elapsed:.2f}s")
+            except Exception as e:
+                print(f"  [FAIL] Query failed: {type(e).__name__}")
+                print(f"         {str(e)[:200]}")
+            print("")
 
     total_elapsed = time.time() - total_start
 
@@ -375,7 +496,12 @@ def main():
     print("QUERY EXECUTION COMPLETE")
     print("=" * 70)
     print(f"Total time: {total_elapsed:.2f}s")
-    print(f"Queries run: {len(list(queries_to_run))}")
+    if query_name == RUN_ALL:
+        print(f"Sections run: Direct Reads + {len(list(QUERIES.keys()))} Cypher queries")
+    elif query_name == DIRECT_READS:
+        print("Sections run: Direct Reads only")
+    else:
+        print(f"Queries run: 1")
     print("=" * 70)
 
     return True
