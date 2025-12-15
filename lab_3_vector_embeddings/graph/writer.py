@@ -403,10 +403,7 @@ class GraphWriter:
                 "next_chunk_count",
                 f"MATCH (:{chunk_label})-[r:NEXT_CHUNK]->(:{chunk_label}) RETURN count(r) AS count",
             ),
-            (
-                "mentions_count",
-                f"MATCH (:{chunk_label})-[r:MENTIONS]->() RETURN count(r) AS count",
-            ),
+            # Note: MENTIONS relationships (Chunk->Company/Stock) not created in this lab
             (
                 "describes_count",
                 "MATCH (:Document)-[r:DESCRIBES]->(:Customer) RETURN count(r) AS count",

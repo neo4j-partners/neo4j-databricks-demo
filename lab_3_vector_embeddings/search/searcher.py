@@ -264,17 +264,15 @@ class DocumentSearcher:
         chunk_label = self.index_config.chunk_label
 
         # Retrieval query that traverses to related entities
+        # Note: Only traverses FROM_DOCUMENT and DESCRIBES relationships
+        # MENTIONS relationships (Chunk->Company/Stock) are not created in this lab
         retrieval_query = f"""
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
         OPTIONAL MATCH (d)-[:DESCRIBES]->(customer:Customer)
-        OPTIONAL MATCH (node)-[:MENTIONS]->(company:Company)
-        OPTIONAL MATCH (node)-[:MENTIONS]->(stock:Stock)
         RETURN node, score,
                d AS document,
-               collect(DISTINCT customer) AS customers,
-               collect(DISTINCT company) AS companies,
-               collect(DISTINCT stock) AS stocks
+               collect(DISTINCT customer) AS customers
         """
 
         retriever = VectorCypherRetriever(
@@ -293,42 +291,25 @@ class DocumentSearcher:
 
         search_results: list[SearchResult] = []
         all_customers: list[dict] = []
-        all_companies: list[dict] = []
-        all_stocks: list[dict] = []
 
         for record in raw_result.records:
             # Extract search result
             result = _record_to_search_result(record)
             search_results.append(result)
 
-            # Collect related entities
+            # Collect related customers (via Document->DESCRIBES->Customer)
             customers = record.get("customers", [])
-            companies = record.get("companies", [])
-            stocks = record.get("stocks", [])
-
             for customer in customers:
                 if customer and hasattr(customer, "items"):
                     customer_dict = dict(customer.items())
                     if customer_dict not in all_customers:
                         all_customers.append(customer_dict)
 
-            for company in companies:
-                if company and hasattr(company, "items"):
-                    company_dict = dict(company.items())
-                    if company_dict not in all_companies:
-                        all_companies.append(company_dict)
-
-            for stock in stocks:
-                if stock and hasattr(stock, "items"):
-                    stock_dict = dict(stock.items())
-                    if stock_dict not in all_stocks:
-                        all_stocks.append(stock_dict)
-
         return GraphTraversalResult(
             search_results=search_results,
             related_customers=all_customers,
-            related_companies=all_companies,
-            related_stocks=all_stocks,
+            related_companies=[],  # MENTIONS relationships not created in this lab
+            related_stocks=[],     # MENTIONS relationships not created in this lab
         )
 
     def hybrid_search_with_graph_traversal(
@@ -352,17 +333,15 @@ class DocumentSearcher:
         ranker = _ranker_from_config(config.ranker)
 
         # Retrieval query that traverses to related entities
+        # Note: Only traverses FROM_DOCUMENT and DESCRIBES relationships
+        # MENTIONS relationships (Chunk->Company/Stock) are not created in this lab
         retrieval_query = """
         WITH node, score
         OPTIONAL MATCH (node)-[:FROM_DOCUMENT]->(d:Document)
         OPTIONAL MATCH (d)-[:DESCRIBES]->(customer:Customer)
-        OPTIONAL MATCH (node)-[:MENTIONS]->(company:Company)
-        OPTIONAL MATCH (node)-[:MENTIONS]->(stock:Stock)
         RETURN node, score,
                d AS document,
-               collect(DISTINCT customer) AS customers,
-               collect(DISTINCT company) AS companies,
-               collect(DISTINCT stock) AS stocks
+               collect(DISTINCT customer) AS customers
         """
 
         retriever = HybridCypherRetriever(
@@ -384,42 +363,25 @@ class DocumentSearcher:
 
         search_results: list[SearchResult] = []
         all_customers: list[dict] = []
-        all_companies: list[dict] = []
-        all_stocks: list[dict] = []
 
         for record in raw_result.records:
             # Extract search result
             result = _record_to_search_result(record)
             search_results.append(result)
 
-            # Collect related entities
+            # Collect related customers (via Document->DESCRIBES->Customer)
             customers = record.get("customers", [])
-            companies = record.get("companies", [])
-            stocks = record.get("stocks", [])
-
             for customer in customers:
                 if customer and hasattr(customer, "items"):
                     customer_dict = dict(customer.items())
                     if customer_dict not in all_customers:
                         all_customers.append(customer_dict)
 
-            for company in companies:
-                if company and hasattr(company, "items"):
-                    company_dict = dict(company.items())
-                    if company_dict not in all_companies:
-                        all_companies.append(company_dict)
-
-            for stock in stocks:
-                if stock and hasattr(stock, "items"):
-                    stock_dict = dict(stock.items())
-                    if stock_dict not in all_stocks:
-                        all_stocks.append(stock_dict)
-
         return GraphTraversalResult(
             search_results=search_results,
             related_customers=all_customers,
-            related_companies=all_companies,
-            related_stocks=all_stocks,
+            related_companies=[],  # MENTIONS relationships not created in this lab
+            related_stocks=[],     # MENTIONS relationships not created in this lab
         )
 
 

@@ -70,19 +70,6 @@ Chunk 3: "The renewable energy sector shows strong growth..."
 **What traditional RAG misses:**
 - Which customer is James?
 - What stocks does James actually hold?
-- Is there a gap between his interests and holdings?
-
----
-
-## Questions Traditional RAG Can't Answer
-
-| Question | Why Traditional RAG Struggles |
-|----------|------------------------------|
-| "Which customers want renewable energy but don't have it?" | Requires connecting interests to holdings |
-| "What documents describe customers with tech portfolios?" | Requires traversing customer → account → stock |
-| "Show me James's profile alongside his positions" | Requires joining document content with graph data |
-
-These questions need *structured context* that preserves relationships.
 
 ---
 
