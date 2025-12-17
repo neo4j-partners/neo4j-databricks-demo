@@ -1,18 +1,36 @@
-# Neo4j + Databricks Integration Demo
+# Neo4j + Databricks Integration Lab
 
-A comprehensive demonstration of integrating Neo4j graph data with Databricks lakehouse architecture for retail investment analysis.
+A hands-on lab for building graph-augmented AI systems using Neo4j and Databricks. This project demonstrates how to combine Neo4j's graph database capabilities with Databricks AI/BI agents to create a multi-agent architecture that bridges structured graph data and unstructured documents.
 
 ## Overview
 
-This project demonstrates bidirectional data flow between Neo4j and Databricks:
+This lab walks through building a graph augmentation pipeline that leverages:
 
-1. **Upload to Databricks** - Load source CSV files to Unity Catalog volumes
-2. **Import to Neo4j** - Build a graph database from the uploaded data
-3. **Export to Lakehouse** - Extract graph data back to Delta Lake tables
+- **Neo4j** for storing and querying connected data as a property graph
+- **Databricks Unity Catalog** for governed data storage (Delta Lake tables and document volumes)
+- **Neo4j Spark Connector** for bidirectional data transfer between the lakehouse and graph database
+- **Databricks Genie Agent** for natural language queries against structured Delta Lake tables
+- **Databricks Knowledge Agent** for RAG-based retrieval over unstructured documents
+- **Multi-Agent Supervisor** for coordinating structured and unstructured data analysis
+- **DSPy Framework** for structured reasoning and graph schema augmentation suggestions
+
+The architecture enables a continuous enrichment loop: graph data exports to the lakehouse for agent analysis, agents identify gaps between structured records and document content, and validated enrichments write back to Neo4j as new relationships and properties.
+
+```
+┌─────────────────┐     ┌─────────────────────────────────────────────────┐
+│                 │     │              DATABRICKS LAKEHOUSE               │
+│   Neo4j Graph   │────▶│  Delta Tables ◀──▶ Genie Agent                  │
+│                 │     │  UC Volumes   ◀──▶ Knowledge Agent              │
+│  7 node types   │     │                         │                       │
+│  7 rel types    │◀────│         Multi-Agent Supervisor                  │
+│                 │     │                         │                       │
+│                 │     │         DSPy Augmentation Agent                 │
+└─────────────────┘     └─────────────────────────────────────────────────┘
+```
 
 ### Data Model
 
-The graph models a retail investment platform where **customers** own **accounts** at various **banks**. Accounts can hold investment **positions** in **stocks** issued by **companies**, and accounts perform financial **transactions** that transfer money to other accounts.
+The sample graph models a retail investment domain with **customers**, **accounts**, **banks**, **transactions**, **positions**, **stocks**, and **companies**.
 
 ```
 Customer ──owns──> Account ──held at──> Bank
